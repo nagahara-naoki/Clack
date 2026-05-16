@@ -127,16 +127,36 @@ Clack records the number of keyboard and mouse interactions **per day** and visu
 > The binary is unsigned, so Windows Defender SmartScreen will warn on first launch. Click **More info → Run anyway**.
 
 > **🟡 macOS: Gatekeeper warning + Input Monitoring permission**
-> Unsigned `.app` will show "cannot be opened because the developer cannot be verified". **Right-click → Open** the first time, then click Open in the dialog.
+> Because the app is not Developer ID signed / notarized yet, macOS may show "Apple could not verify that this app is free of malware". First drag `Clack.app` into Applications and try **Right-click → Open**. If the dialog only shows Done, open System Settings → **Privacy & Security**, click **Open Anyway** for Clack near the bottom, then launch it again.
 > Then open System Settings → **Privacy & Security → Input Monitoring** and **Accessibility**, and enable Clack in both places. On macOS, global keyboard monitoring may require both.
 
 ### macOS installation steps (detailed)
 
 1. Download the `.dmg`, open it, drag `Clack.app` into `Applications`.
-2. **Right-click** `Clack.app` → Open → click Open in the dialog (first time only).
-3. System Settings → Privacy & Security → Input Monitoring → enable Clack.
-4. If needed, also enable Clack under Accessibility.
-5. Restart the app. Done.
+2. **Right-click** `Clack.app` → Open (first time only).
+3. If macOS says it cannot verify the app, click Done.
+4. Open System Settings → Privacy & Security, then click **Open Anyway** for Clack near the bottom.
+5. Launch `Clack.app` again.
+6. System Settings → Privacy & Security → Input Monitoring → enable Clack.
+7. If needed, also enable Clack under Accessibility.
+8. Restart the app. Done.
+
+If it still does not open, remove the quarantine attribute from Terminal:
+
+```bash
+xattr -dr com.apple.quarantine /Applications/Clack.app
+open /Applications/Clack.app
+```
+
+If the permission prompt appears on every launch, or mouse clicks are counted but keyboard input is not, macOS may still have a stale permission record for an older Clack build. Quit Clack, remove Clack from Input Monitoring and Accessibility in System Settings, then reset the permission records:
+
+```bash
+tccutil reset Accessibility com.clack.desktop
+tccutil reset ListenEvent com.clack.desktop
+open /Applications/Clack.app
+```
+
+After launch, enable Clack again under both Input Monitoring and Accessibility, then restart the app.
 
 ---
 

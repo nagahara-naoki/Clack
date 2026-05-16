@@ -9,10 +9,16 @@
 /// to be trusted for Accessibility access to observe global key events.
 #[cfg(target_os = "macos")]
 pub fn request_input_monitoring() {
-    use macos_accessibility_client::accessibility::application_is_trusted_with_prompt;
+    use macos_accessibility_client::accessibility::{
+        application_is_trusted, application_is_trusted_with_prompt,
+    };
     use objc2_core_graphics::{CGPreflightListenEventAccess, CGRequestListenEventAccess};
 
-    let accessibility_allowed = application_is_trusted_with_prompt();
+    let accessibility_allowed = if application_is_trusted() {
+        true
+    } else {
+        application_is_trusted_with_prompt()
+    };
     if !accessibility_allowed {
         eprintln!(
             "accessibility permission is not granted; keyboard events may not be counted",

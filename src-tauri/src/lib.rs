@@ -113,7 +113,6 @@ pub fn run() {
     // スレッド生成前にローカルタイムオフセットを確定させる
     // (`date_util::init` の docs を参照)。
     date_util::init();
-    macos_permissions::request_input_monitoring();
 
     let builder = tauri::Builder::default()
         // 二重起動防止: 既存インスタンスがあれば、そちらのメインウィンドウを
@@ -169,6 +168,11 @@ pub fn run() {
         .setup(|app| {
             let app_handle = app.handle().clone();
             let paths = resolve_paths(&app_handle)?;
+
+            // Ask after Tauri has initialized the bundled app. macOS TCC tracks
+            // permissions against the app identity, and prompting too early can
+            // make unsigned release builds look untrusted on every launch.
+            macos_permissions::request_input_monitoring();
 
             // 初回起動判定: settings.json が無ければ初回扱い。
             // (a) 仕様 §3.6 に従い自動起動をデフォルト ON にする
