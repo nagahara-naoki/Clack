@@ -43,6 +43,7 @@ mod settings;
 mod storage;
 mod tray;
 
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
 use std::thread;
 use std::time::Duration;
@@ -70,6 +71,41 @@ const LEGACY_APP_DIR_NAME: &str = "ClickCounter";
 const ROLLOVER_CHECK_INTERVAL: Duration = Duration::from_secs(30);
 const FLUSH_INTERVAL: Duration = Duration::from_secs(10);
 const EMIT_INTERVAL: Duration = Duration::from_millis(1000);
+
+/// アプリを本当に終了してよいかを表すフラグ。
+///
+/// macOS の `Cmd+Q` や Dock からの終了は、ユーザー感覚では「閉じる」に近く
+/// 扱われることがある。Clack は常駐して入力を記録するアプリなので、トレイや
+/// 設定画面の「終了」から来た操作だけを明示終了として扱う。
+pub(crate) struct ExitState {
+    requested: AtomicBool,
+}
+
+impl ExitState {
+    pub(crate) fn request_exit(&self) {
+        self.requested.store(true, Ordering::SeqCst);
+    }
+
+    fn is_requested(&self) -> bool {
+        self.requested.load(Ordering::SeqCst)
+    }
+}
+
+impl Default for ExitState {
+    fn default() -> Self {
+        Self {
+            requested: AtomicBool::new(false),
+        }
+    }
+}
+
+fn hide_all_windows(app: &tauri::AppHandle) {
+    for label in ["main", "settings", "live"] {
+        if let Some(win) = app.get_webview_window(label) {
+            let _ = win.hide();
+        }
+    }
+}
 
 /// `data.json` / `settings.json` のパスを解決する。
 /// Tauri 既定の app-data-dir はアイデンティファイア接頭辞付き
@@ -193,6 +229,7 @@ pub fn run() {
             app.manage(state_arc.clone());
             app.manage(settings_arc.clone());
             app.manage(paths.clone());
+            app.manage(ExitState::default());
 
             // 仕様 §3.6 — 初回起動時に自動起動を ON にする。
             use tauri_plugin_autostart::ManagerExt;
@@ -347,7 +384,18 @@ pub fn run() {
     app.run(|app_handle, event| {
         // 正常終了時の最終フラッシュ。
         // Tauri 2 の RunEvent は non_exhaustive のため `if let` で必要分のみ捕捉。
-        if let tauri::RunEvent::ExitRequested { .. } = event {
+        if let tauri::RunEvent::ExitRequested { api, .. } = event {
+            let explicit_exit = app_handle
+                .try_state::<ExitState>()
+                .map(|state| state.is_requested())
+                .unwrap_or(false);
+
+            if !explicit_exit {
+                api.prevent_exit();
+                hide_all_windows(app_handle);
+                return;
+            }
+
             if let (Some(state), Some(paths)) = (
                 app_handle.try_state::<AppStateHandle>(),
                 app_handle.try_state::<AppPaths>(),

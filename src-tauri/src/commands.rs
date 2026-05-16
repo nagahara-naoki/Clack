@@ -799,5 +799,8 @@ pub fn quit_app(
     if let Err(e) = storage::write_atomic(&paths.data_path, &snapshot) {
         eprintln!("final flush failed: {e}");
     }
+    if let Some(exit) = app.try_state::<crate::ExitState>() {
+        exit.request_exit();
+    }
     app.exit(0);
 }
