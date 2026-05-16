@@ -1,0 +1,173 @@
+/* リアルタイム表示オーバーレイ専用 CSS。
+   - 構造: 緑色廃止のモノクロ。グレースケールを 3〜4 段階で
+     階層的に使い、視覚ノイズを抑えつつ深みを出す
+   - 色味の方針:
+       bg     = 半透明の濃いブルーグレー (グラス)
+       header = body より 1 段濃いオーバーレイ
+       chip   = body より 1 段明るい (淡白)
+       recent = chip より 1 段明るい + シャドウで「持ち上がる」
+   - 余分な色味は無し。アクセントはホワイトの透明度差だけで作る。 */
+*, *::before, *::after { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  /* ベース: ごく僅かな縦グラデで奥行きを出す。完全フラットだと
+     glass effect が安っぽく見えるため。 */
+  background:
+    linear-gradient(
+      180deg,
+      rgba(16, 18, 22, 0.58) 0%,
+      rgba(12, 14, 18, 0.62) 100%);
+  color: rgba(255, 255, 255, 0.92);
+  font-family: system-ui, -apple-system, BlinkMacSystemFont,
+    "Segoe UI Variable", "Segoe UI", "Hiragino Kaku Gothic ProN",
+    "Hiragino Sans", "Yu Gothic UI", "Noto Sans CJK JP", sans-serif;
+  /* ガラス効果。Win11 WebView2 / mac WebKit いずれもサポート。 */
+  -webkit-backdrop-filter: blur(28px) saturate(160%);
+  backdrop-filter: blur(28px) saturate(160%);
+  /* 縁取りはコントラストを抑えた極薄白 (ガラス感のためのハイライト)。 */
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.04),
+    0 12px 28px rgba(0, 0, 0, 0.28);
+  overflow: hidden;
+  user-select: none;
+  -webkit-user-select: none;
+  cursor: grab;
+}
+
+html:active, body:active { cursor: grabbing; }
+
+/* ヘッダー: ボディより 1 段濃いオーバーレイ + 上下の薄いハイライト。
+   緑などの色味は無し。タイトルは控えめな白で字間を広めに。 */
+.live-header {
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 4px 0 14px;
+  background: linear-gradient(
+    180deg,
+    rgba(0, 0, 0, 0.28) 0%,
+    rgba(0, 0, 0, 0.18) 100%);
+  color: rgba(255, 255, 255, 0.55);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.20em;
+  text-transform: uppercase;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  box-shadow: inset 0 -1px 0 rgba(0, 0, 0, 0.18);
+  cursor: inherit;
+  font-feature-settings: "tnum" 1;
+}
+
+.live-title {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.header-controls {
+  display: flex;
+  gap: 1px;
+  -webkit-app-region: no-drag;
+}
+
+.live-btn {
+  width: 22px;
+  height: 22px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.55);
+  border: 0;
+  border-radius: 4px;
+  cursor: pointer;
+  padding: 0;
+  line-height: 1;
+  transition: background 120ms ease, color 120ms ease;
+}
+
+.live-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.92);
+}
+
+.live-btn.is-active {
+  background: rgba(255, 255, 255, 0.12);
+  color: rgba(255, 255, 255, 1);
+}
+
+.live-btn svg { width: 13px; height: 13px; }
+
+/* チップ表示エリア。
+   既定 (非スタック・常に 1 個) は 1 行・左寄せ。
+   .is-stack が付くと折り返しで下から積む。 */
+.live-bar {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  justify-content: flex-start;
+  /* テキスト同士の間隔。タイプされた語のように見えるよう少し広めに。 */
+  gap: 12px;
+  padding: 10px 18px;
+  min-height: 56px;
+  overflow: hidden;
+}
+
+.live-bar.is-stack {
+  flex-wrap: wrap;
+  align-content: flex-end;
+  justify-content: flex-start;
+  /* スタック時は行間と語間で別の値 (column-gap, row-gap)。 */
+  gap: 10px 14px;
+  padding: 12px 18px;
+}
+
+/* チップ: 背景・枠線・影をすべて撤去し、文字だけで構成。
+   暗いガラスの上に白い文字。視認性は font-weight と text-shadow で確保。 */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 6px;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  color: rgba(255, 255, 255, 0.55);
+  font-size: 17px;
+  font-weight: 600;
+  letter-spacing: 0.005em;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  /* 半透明背景でも文字が滲まないよう、ごく薄い影で輪郭を補強。 */
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.55);
+  animation: chip-in 130ms cubic-bezier(.22, 1, .36, 1);
+}
+
+/* 最新チップ: 不透明度 100% の白 + 微発光で「いま入力された 1 個」を強調。
+   背景無しなのでサイズや形は変わらず、明るさだけが変化する。 */
+.chip.is-recent {
+  color: rgba(255, 255, 255, 1);
+  text-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.60),
+    0 0 12px rgba(255, 255, 255, 0.22);
+}
+
+/* フェードアウト: 縦に少し抜けながら消える。
+   非スタック時の「スワップ」演出と相性が良い。 */
+.chip.is-fading {
+  animation: chip-out 160ms cubic-bezier(.4, 0, .68, 0) forwards;
+}
+
+@keyframes chip-in {
+  from { opacity: 0; transform: translateY(6px) scale(0.94); }
+  to   { opacity: 1; transform: translateY(0)   scale(1); }
+}
+@keyframes chip-out {
+  to { opacity: 0; transform: translateY(-6px) scale(0.94); }
+}

@@ -1,0 +1,7 @@
+# Cargo configuration intentionally stays platform-neutral.
+#
+# Windows GNU builds still need an ASCII target directory when the source tree
+# lives under a path with Japanese characters or OneDrive Business segments.
+# That Windows-only override is applied by scripts/build.js via
+# CARGO_TARGET_DIR. Keeping it out of this file prevents macOS from reading a
+# C:/... path and failing while joining DYLD_FALLBACK_LIBRARY_PATH.

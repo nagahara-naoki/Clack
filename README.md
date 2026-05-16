@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="icons/icon-256.png" alt="Clack" width="128" height="128" />
+<img src="docs/icon-256.png" alt="Clack" width="128" height="128" />
 
 # Clack
 

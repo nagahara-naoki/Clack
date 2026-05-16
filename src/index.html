@@ -1,0 +1,310 @@
+<!doctype html>
+<html lang="ja" data-theme="auto">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Clack</title>
+    <script src="theme-boot.js"></script>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="card">
+      <header class="top">
+        <div class="brand">
+          <span class="brand-dot" aria-hidden="true"></span>
+          <span class="brand-name">Clack</span>
+          <span id="pause-badge" class="pause-badge" data-i18n="paused_badge" hidden>一時停止中</span>
+        </div>
+        <div class="controls">
+          <div class="seg" role="tablist" aria-label="View">
+            <button id="tab-cal" class="seg-btn is-active" role="tab" aria-selected="true">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <rect x="3" y="5" width="18" height="16" rx="2" fill="none" stroke="currentColor" stroke-width="1.6" />
+                <path d="M3 10h18M8 3v4M16 3v4" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
+              </svg>
+              <span data-i18n="calendar">カレンダー</span>
+            </button>
+            <button id="tab-analytics" class="seg-btn" role="tab" aria-selected="false">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M4 20V10M10 20V4M16 20v-7M22 20H2" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
+              </svg>
+              <span data-i18n="analytics">分析</span>
+            </button>
+            <button id="tab-list" class="seg-btn" role="tab" aria-selected="false">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M8 6h12M8 12h12M8 18h12M4 6h.01M4 12h.01M4 18h.01" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
+              </svg>
+              <span data-i18n="list">リスト</span>
+            </button>
+          </div>
+          <button id="live-toggle" class="icon-btn" aria-label="Live display" title="リアルタイム表示">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <circle cx="12" cy="12" r="2.5" fill="currentColor" />
+              <path d="M6.34 17.66A8 8 0 0 1 6.34 6.34M17.66 6.34a8 8 0 0 1 0 11.32M3.51 20.49A12 12 0 0 1 3.51 3.51M20.49 3.51a12 12 0 0 1 0 16.98" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
+            </svg>
+          </button>
+          <button id="open-settings" class="icon-btn" aria-label="Settings" title="Settings">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="1.6" />
+              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h0a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v0a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+          </button>
+        </div>
+      </header>
+
+      <main class="body">
+        <section class="today">
+          <div class="today-label" data-i18n="today">TODAY</div>
+          <div class="today-date" id="today-date">—</div>
+        </section>
+
+        <section class="stats">
+          <div class="stat">
+            <div class="stat-label">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <rect x="2.5" y="6" width="19" height="12" rx="2.2" fill="none" stroke="currentColor" stroke-width="1.6" />
+                <path d="M6 10v0M9 10v0M12 10v0M15 10v0M18 10v0M7.5 14h9" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
+              </svg>
+              <span data-i18n="keys">キー</span>
+            </div>
+            <div class="stat-num"><span id="today-keys">0</span><span class="unit" data-i18n="strokes">STROKES</span></div>
+          </div>
+          <div class="stat">
+            <div class="stat-label">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <rect x="6" y="3" width="12" height="18" rx="6" fill="none" stroke="currentColor" stroke-width="1.6" />
+                <path d="M12 7v4" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
+              </svg>
+              <span data-i18n="mouse">マウス</span>
+            </div>
+            <div class="stat-num"><span id="today-mouse">0</span><span class="unit" data-i18n="clicks">CLICKS</span></div>
+          </div>
+        </section>
+
+        <hr class="divider" />
+
+        <section id="view-cal" class="view view-cal">
+          <div class="cal-head">
+            <div class="cal-title" id="cal-title">—</div>
+            <div class="cal-head-right">
+              <div class="period-slider" role="group" aria-label="Period">
+                <div class="period-ticks">
+                  <span data-pos="0" data-i18n="period_1m">1ヶ月</span>
+                  <span data-pos="1" data-i18n="period_3m">3ヶ月</span>
+                  <span data-pos="2" class="is-active" data-i18n="period_6m">6ヶ月</span>
+                  <span data-pos="3" data-i18n="period_12m">12ヶ月</span>
+                </div>
+                <input type="range" id="period-range" min="0" max="3" step="1" value="2" aria-label="Period length" />
+              </div>
+              <div class="cal-nav">
+                <button id="cal-prev" class="icon-btn" aria-label="Previous">
+                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 6l-6 6 6 6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" /></svg>
+                </button>
+                <button id="cal-next" class="icon-btn" aria-label="Next">
+                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" /></svg>
+                </button>
+              </div>
+            </div>
+          </div>
+          <div class="cal-grid">
+            <div class="cal-months-row" id="cal-months"></div>
+            <div class="cal-body">
+              <div class="cal-dow" id="cal-dow"></div>
+              <div class="cal-weeks" id="cal-weeks"></div>
+            </div>
+          </div>
+        </section>
+
+        <section id="view-analytics" class="view view-analytics" hidden>
+          <div class="analytics-scope">
+            <div class="seg" role="radiogroup" aria-label="Scope">
+              <button class="seg-btn" data-scope="today" role="radio" data-i18n="scope_today">今日</button>
+              <button class="seg-btn" data-scope="week" role="radio" data-i18n="scope_week">7日</button>
+              <button class="seg-btn" data-scope="month" role="radio" data-i18n="scope_month">今月</button>
+              <button class="seg-btn is-active" data-scope="all" role="radio" aria-checked="true" data-i18n="scope_all">全期間</button>
+            </div>
+          </div>
+
+          <div class="kpi-row">
+            <div class="kpi">
+              <div class="kpi-label">
+                <span class="kpi-icon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24">
+                    <rect x="3" y="5" width="18" height="16" rx="2" fill="none" stroke="currentColor" stroke-width="1.7" />
+                    <path d="M3 10h18M8 3v4M16 3v4M9 15l2 2 4-4" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" />
+                  </svg>
+                </span>
+                <span data-i18n="kpi_streak">連続日数</span>
+              </div>
+              <div class="kpi-value"><b id="kpi-streak-num">0</b><span class="kpi-unit" data-i18n="kpi_streak_unit">日</span></div>
+            </div>
+            <div class="kpi">
+              <div class="kpi-label">
+                <span class="kpi-icon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24">
+                    <path d="M12 2.5l2.65 6.05 6.6.55-5.05 4.4 1.55 6.5L12 16.65 6.25 19.9l1.55-6.4L2.75 9.1l6.6-.55z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" stroke-linecap="round" />
+                  </svg>
+                </span>
+                <span data-i18n="kpi_best">最多日</span>
+              </div>
+              <div class="kpi-value">
+                <b id="kpi-best-date">—</b>
+                <span class="kpi-sub"><span id="kpi-best-total">0</span><span class="kpi-unit" data-i18n="kpi_best_unit">操作</span></span>
+              </div>
+            </div>
+            <div class="kpi">
+              <div class="kpi-label">
+                <span class="kpi-icon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24">
+                    <circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.7" />
+                    <path d="M12 7v5l3 2" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" />
+                  </svg>
+                </span>
+                <span data-i18n="kpi_active">アクティブ時間</span>
+              </div>
+              <div class="kpi-value"><b id="kpi-active-time">—</b></div>
+            </div>
+            <div class="kpi">
+              <div class="kpi-label">
+                <span class="kpi-icon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24">
+                    <path d="M12 3L3 7l9 4 9-4-9-4z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" />
+                    <path d="M3 12l9 4 9-4M3 17l9 4 9-4" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" />
+                  </svg>
+                </span>
+                <span data-i18n="kpi_total">累計</span>
+              </div>
+              <div class="kpi-value">
+                <b id="kpi-keys-total">0</b><span class="kpi-unit" data-i18n="kpi_strokes">打鍵</span>
+                <span class="kpi-sep">·</span>
+                <b id="kpi-mouse-total">0</b><span class="kpi-unit" data-i18n="kpi_clicks">クリック</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="trip-row">
+            <article class="trip-card">
+              <div class="trip-head">
+                <span class="trip-icon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24">
+                    <circle cx="4" cy="12" r="1.6" fill="currentColor" />
+                    <path d="M5.5 12h12.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-dasharray="2.4 2.6" />
+                    <path d="M16 8l4 4-4 4" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
+                  </svg>
+                </span>
+                <span class="trip-label" data-i18n="trip_mouse_label">マウスで歩いた距離</span>
+              </div>
+              <div class="trip-value">
+                <b class="trip-num" id="trip-mouse-num">0</b>
+                <span class="trip-unit" id="trip-mouse-unit">m</span>
+              </div>
+              <div class="trip-progress">
+                <div class="trip-bar">
+                  <div class="trip-fill" id="trip-mouse-fill" style="width: 0%"></div>
+                </div>
+                <p class="trip-cmp" id="trip-mouse-cmp">—</p>
+              </div>
+            </article>
+
+            <article class="trip-card">
+              <div class="trip-head">
+                <span class="trip-icon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24">
+                    <path d="M3 20l5-9 4 6 3-4 6 7H3z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round" />
+                  </svg>
+                </span>
+                <span class="trip-label" data-i18n="trip_scroll_label">スクロールで上った高さ</span>
+              </div>
+              <div class="trip-value">
+                <b class="trip-num" id="trip-scroll-num">0</b>
+                <span class="trip-unit" id="trip-scroll-unit">m</span>
+              </div>
+              <div class="trip-progress">
+                <div class="trip-bar">
+                  <div class="trip-fill" id="trip-scroll-fill" style="width: 0%"></div>
+                </div>
+                <p class="trip-cmp" id="trip-scroll-cmp">—</p>
+              </div>
+            </article>
+          </div>
+
+          <div class="analytics-section">
+            <div class="section-head">
+              <span class="section-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24">
+                  <circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.7" />
+                  <path d="M12 7v5l3 2" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" />
+                </svg>
+              </span>
+              <div class="section-title" data-i18n="anal_hour_title">時間帯</div>
+              <div class="section-sub" data-i18n="anal_hour_sub">0〜23 時の活動量</div>
+            </div>
+            <div id="hour-heatmap" class="hour-heatmap" role="row" aria-label="Activity by hour"></div>
+          </div>
+
+          <div class="analytics-row">
+            <div class="analytics-section">
+              <div class="section-head">
+                <span class="section-icon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24">
+                    <rect x="2.5" y="6" width="19" height="12" rx="2" fill="none" stroke="currentColor" stroke-width="1.7" />
+                    <path d="M6 10v0M9 10v0M12 10v0M15 10v0M18 10v0M7.5 14h9" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" />
+                  </svg>
+                </span>
+                <div class="section-title" data-i18n="anal_keys_title">よく使うキー</div>
+                <div class="section-sub" data-i18n="anal_keys_sub">入力回数の多い順 (全期間)</div>
+              </div>
+              <div id="keys-breakdown" class="breakdown-bars"></div>
+            </div>
+            <div class="analytics-section">
+              <div class="section-head">
+                <span class="section-icon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24">
+                    <rect x="7" y="3" width="10" height="18" rx="5" fill="none" stroke="currentColor" stroke-width="1.7" />
+                    <path d="M12 7v4" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" />
+                  </svg>
+                </span>
+                <div class="section-title" data-i18n="anal_mouse_title">マウス</div>
+                <div class="section-sub" data-i18n="anal_mouse_sub">ボタン別の内訳</div>
+              </div>
+              <div id="mouse-breakdown" class="breakdown-bars"></div>
+            </div>
+          </div>
+        </section>
+
+        <section id="view-list" class="view view-list" hidden>
+          <div class="list-head">
+            <span data-i18n="date">日付</span>
+            <span class="num-col" data-i18n="keys">キー</span>
+            <span class="num-col" data-i18n="mouse">マウス</span>
+          </div>
+          <div class="list-body" id="list-body"></div>
+        </section>
+      </main>
+
+      <footer class="foot">
+        <div class="foot-month">
+          <span class="muted" data-i18n="monthTotalPrefix">当月 ・</span>
+          <b id="month-keys">0</b>
+          <span class="muted" data-i18n="strokes_long">打鍵 ・</span>
+          <b id="month-mouse">0</b>
+          <span class="muted" data-i18n="clicks_long">クリック</span>
+        </div>
+        <div class="legend">
+          <span class="muted" data-i18n="less">LESS</span>
+          <span class="legend-cells">
+            <span class="cell" data-level="0"></span>
+            <span class="cell" data-level="1"></span>
+            <span class="cell" data-level="2"></span>
+            <span class="cell" data-level="3"></span>
+            <span class="cell" data-level="4"></span>
+          </span>
+          <span class="muted" data-i18n="more">MORE</span>
+        </div>
+      </footer>
+
+      <div id="tooltip" class="tooltip" hidden></div>
+    </div>
+    <script src="main.js"></script>
+  </body>
+</html>

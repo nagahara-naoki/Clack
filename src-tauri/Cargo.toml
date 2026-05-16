@@ -1,0 +1,71 @@
+[package]
+name = "clack"
+version = "0.1.0"
+description = "Clack — lightweight keyboard and mouse activity counter"
+authors = ["Clack"]
+edition = "2021"
+rust-version = "1.77"
+license = "MIT"
+publish = false
+
+[lib]
+name = "clack_lib"
+# Desktop-only: rlib is enough. cdylib/staticlib are only needed for the
+# Tauri mobile targets, and on Windows GNU `ld` chokes on cdylib once the
+# transitive export count exceeds the 16-bit ordinal limit.
+crate-type = ["rlib"]
+
+[[bin]]
+name = "clack"
+path = "src/main.rs"
+
+[lints.rust]
+unsafe_code = "forbid"
+
+[lints.clippy]
+all = { level = "warn", priority = -1 }
+pedantic = { level = "warn", priority = -1 }
+unwrap_used = "warn"
+expect_used = "warn"
+panic = "warn"
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+# --- Vulnerability notes (verified 2026-05-14, RustSec advisory DB) -----------
+#  - tauri 2.x:               no open advisories (1.x advisories do not apply)
+#  - tauri-plugin-autostart:  no open advisories
+#  - serde / serde_json:      no open advisories
+#  - time 0.3.x:              RUSTSEC-2026-0009 affects 0.3.6..0.3.46
+#                             (RFC 2822 parser stack-exhaustion DoS).
+#                             Pinned to >=0.3.47 below to enforce the fix.
+#                             We do not call any time::*::parse RFC 2822 paths
+#                             ourselves, but defensive pinning is cheap.
+#  - rdev 0.5.x:              no published advisories; the only Rust-native
+#                             cross-platform global input hook crate.
+#                             Encapsulates required unsafe; we forbid `unsafe`
+#                             in our own code via `unsafe_code = "forbid"`.
+[dependencies]
+tauri = { version = "2.11", features = ["tray-icon", "devtools"] }
+tauri-plugin-autostart = "2.5"
+tauri-plugin-single-instance = "2"
+tauri-plugin-dialog = "2"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+rdev = "0.5.3"
+time = { version = "0.3.47", features = ["formatting", "local-offset", "macros"] }
+objc2-core-graphics = "0.3.2"
+macos-accessibility-client = "0.0.2"
+
+[profile.release]
+opt-level = "z"
+lto = true
+codegen-units = 1
+strip = true
+panic = "abort"
+debug = false
+incremental = false
+overflow-checks = true
+
+[patch.crates-io]
+rdev = { path = "../vendor/rdev" }

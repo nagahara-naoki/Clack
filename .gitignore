@@ -1,0 +1,50 @@
+# Rust / Cargo
+target/
+**/target/
+Cargo.lock
+
+# Node
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Tauri build output
+src-tauri/target/
+src-tauri/gen/
+dist/
+
+# Stray build output caused by Windows-style target paths on macOS
+src-tauri/C:/
+
+# Generated app icons
+src-tauri/icons/*.png
+src-tauri/icons/*.ico
+src-tauri/icons/*.icns
+src-tauri/icons/android/
+src-tauri/icons/ios/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# OS
+desktop.ini
+
+# Local config / secrets (not used, but defensive)
+.env
+.env.*
+!.env.example
+*.local
+.npmrc
+
+# Vendored dependency metadata / cargo cache markers
+vendor/**/.cargo_vcs_info.json
+vendor/**/.cargo-ok
+
+# Logs
+*.log

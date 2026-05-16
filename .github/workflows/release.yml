@@ -1,0 +1,119 @@
+# Tag-driven release pipeline.
+#
+# Trigger:  push a tag like `v0.1.0` to the repository.
+# Result:   a GitHub Release is created with Windows + macOS bundles attached.
+#
+# Notes:
+# - Windows build uses MinGW UCRT toolchain via rustup default (gnu).
+#   The repo's `.cargo/config.toml` redirects target-dir to C:/dev/clack-target
+#   to work around MinGW non-ASCII path issues. The workflow keeps that intact.
+# - macOS build strips the Windows-only target-dir override before compiling
+#   and uses the default `src-tauri/target/` path.
+# - Both jobs regenerate platform-specific icons via `tauri icon` so .ico /
+#   .icns are always present even if not committed.
+
+name: Release
+
+on:
+  push:
+    tags: ["v*.*.*"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  # =================================================================
+  # Windows: .msi + NSIS .exe + portable clack.exe
+  # =================================================================
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache cargo
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri -> "C:/dev/clack-target"
+
+      - name: Install deps
+        run: npm ci
+
+      - name: Generate platform icons
+        run: npx tauri icon icons/icon-1024.png
+
+      - name: Build
+        run: npm run build
+
+      - name: Upload to Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            dist/clack.exe
+            dist/WebView2Loader.dll
+            dist/Clack_*_x64-setup.exe
+            dist/Clack_*_x64_en-US.msi
+          generate_release_notes: true
+          fail_on_unmatched_files: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # =================================================================
+  # macOS: universal .dmg (Intel + Apple Silicon)
+  # =================================================================
+  build-macos:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: x86_64-apple-darwin,aarch64-apple-darwin
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+
+      - name: Install deps
+        run: npm ci
+
+      - name: Strip Windows-only target-dir override
+        # Windows uses C:/dev/clack-target (MinGW non-ASCII path fix).
+        # That path is invalid on macOS. Remove the override so cargo uses
+        # the default `src-tauri/target/`.
+        run: |
+          sed -i '' '/^[[:space:]]*target-dir[[:space:]]*=/d' src-tauri/.cargo/config.toml
+          cat src-tauri/.cargo/config.toml
+
+      - name: Generate platform icons
+        run: npx tauri icon icons/icon-1024.png
+
+      - name: Build (universal)
+        run: npx tauri build --target universal-apple-darwin
+
+      - name: Collect artifacts
+        run: |
+          mkdir -p dist
+          cp src-tauri/target/universal-apple-darwin/release/bundle/dmg/*.dmg dist/ || true
+          ls -la dist/
+
+      - name: Upload to Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/*.dmg
+          generate_release_notes: true
+          fail_on_unmatched_files: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -1,0 +1,1399 @@
+/* =========================================================
+   Clack — Neutral grayscale + single green.
+   Pure system-ui (one family), tabular numerals for stats.
+   ========================================================= */
+
+/* ---------- Tokens (Light, default) ----------------------- */
+:root {
+  --bg: #ffffff;
+  --bg-soft: #fafafa;
+  --bg-elev: #ffffff;
+  --bg-hover: #f3f4f6;
+  --bg-active: #e5e7eb;
+
+  --fg: #111113;
+  --fg-muted: #6b7280;
+  --fg-faint: #9ca3af;
+
+  --border: #e5e7eb;
+  --border-strong: #d1d5db;
+
+  --accent: #16a34a;
+  --accent-hover: #15803d;
+  --accent-fg: #ffffff;
+
+  /* GitHub-style green heatmap */
+  --cell-0: #ebedf0;
+  --cell-1: #9be9a8;
+  --cell-2: #40c463;
+  --cell-3: #30a14e;
+  --cell-4: #216e39;
+
+  --cell-size: 12px;
+  --cell-gap: 2px;
+
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.04);
+  --shadow-md: 0 4px 14px rgba(0, 0, 0, 0.06);
+
+  --font: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI Variable",
+    "Segoe UI", "Hiragino Sans", "Yu Gothic UI", "Noto Sans CJK JP", sans-serif;
+
+  color-scheme: light;
+}
+
+/* ---------- Tokens (Dark) --------------------------------- */
+:root[data-theme="dark"] {
+  --bg: #0a0a0b;
+  --bg-soft: #0f1011;
+  --bg-elev: #141517;
+  --bg-hover: #1c1d20;
+  --bg-active: #26282c;
+
+  --fg: #fafafa;
+  --fg-muted: #9ca3af;
+  --fg-faint: #6b7280;
+
+  --border: #26282c;
+  --border-strong: #3a3d42;
+
+  --accent: #22c55e;
+  --accent-hover: #16a34a;
+  --accent-fg: #0a0a0b;
+
+  --cell-0: #20242b;
+  --cell-1: #0e4429;
+  --cell-2: #006d32;
+  --cell-3: #26a641;
+  --cell-4: #39d353;
+
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.5);
+  --shadow-md: 0 4px 14px rgba(0, 0, 0, 0.4);
+
+  color-scheme: dark;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root[data-theme="auto"] {
+    --bg: #0a0a0b;
+    --bg-soft: #0f1011;
+    --bg-elev: #141517;
+    --bg-hover: #1c1d20;
+    --bg-active: #26282c;
+
+    --fg: #fafafa;
+    --fg-muted: #9ca3af;
+    --fg-faint: #6b7280;
+
+    --border: #26282c;
+    --border-strong: #3a3d42;
+
+    --accent: #22c55e;
+    --accent-hover: #16a34a;
+    --accent-fg: #0a0a0b;
+
+    --cell-0: #20242b;
+    --cell-1: #0e4429;
+    --cell-2: #006d32;
+    --cell-3: #26a641;
+    --cell-4: #39d353;
+
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.5);
+    --shadow-md: 0 4px 14px rgba(0, 0, 0, 0.4);
+
+    color-scheme: dark;
+  }
+}
+
+/* ---------- Reset / base ---------------------------------- */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--font);
+  font-size: 14px;
+  line-height: 1.45;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  font-feature-settings: "ss01";
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+button {
+  font: inherit;
+  color: inherit;
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+}
+
+button:focus-visible,
+input:focus-visible,
+[role="tab"]:focus-visible,
+[role="radio"]:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+
+hr {
+  border: 0;
+  border-top: 1px solid var(--border);
+  margin: 0;
+}
+
+/* =========================================================
+   Main window
+   ========================================================= */
+.card {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  padding: 18px 24px 14px;
+  background: var(--bg);
+}
+
+/* ---------- Header --------------------------------------- */
+.top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding-bottom: 16px;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.brand-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--accent);
+  flex: none;
+}
+
+.brand-name {
+  font-size: 14.5px;
+  font-weight: 500;
+  letter-spacing: -0.005em;
+  color: var(--fg);
+}
+
+/* 一時停止中であることを示す小さなピル。
+   trayメニュー・設定UIと並んで、メイン画面でも一目で状態が分かるように。 */
+.pause-badge {
+  display: inline-block;
+  padding: 1px 8px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  border-radius: 999px;
+  background: rgba(220, 38, 38, 0.12);
+  color: #dc2626;
+  border: 1px solid rgba(220, 38, 38, 0.35);
+  text-transform: uppercase;
+  margin-left: 4px;
+}
+
+/* `display: inline-block` を上書きで設定したため、HTML の `hidden` 属性が
+   効かなくなっていた。明示的に `display: none` を当て直して JS からの
+   表示制御を機能させる。 */
+.pause-badge[hidden] {
+  display: none;
+}
+
+:root[data-theme="dark"] .pause-badge {
+  background: rgba(239, 68, 68, 0.15);
+  color: #f87171;
+  border-color: rgba(239, 68, 68, 0.45);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root[data-theme="auto"] .pause-badge {
+    background: rgba(239, 68, 68, 0.15);
+    color: #f87171;
+    border-color: rgba(239, 68, 68, 0.45);
+  }
+}
+
+.controls {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* セグメントのコンテナ: 縁取りは撤去。背景色だけでグループを示し、
+   その中で「アクティブだけが白く浮き上がる」コントラストに集中させる。 */
+.seg {
+  display: inline-flex;
+  background: var(--bg-soft);
+  border-radius: 999px;
+  padding: 2px;
+}
+
+/* セグメントボタン (タブ): グレースケールの 3 段階で状態を表現。
+   - inactive: 文字 faint、SVG も低不透明度
+   - hover   : 文字 muted (一段濃く)
+   - active  : 文字 fg-strong + 太字 + 白カード + 影
+   これでアクティブが「浮き上がる」見え方になる。 */
+.seg-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  border-radius: 999px;
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--fg-faint);
+  transition: background 140ms cubic-bezier(.22, 1, .36, 1),
+              color 140ms ease,
+              box-shadow 140ms ease,
+              transform 140ms ease;
+}
+
+.seg-btn svg {
+  width: 14px;
+  height: 14px;
+  opacity: 0.70;
+  transition: opacity 140ms ease;
+}
+
+.seg-btn:hover:not(.is-active):not([aria-checked="true"]) {
+  color: var(--fg-muted);
+}
+.seg-btn:hover:not(.is-active):not([aria-checked="true"]) svg { opacity: 0.85; }
+
+.seg-btn.is-active,
+.seg-btn[aria-checked="true"] {
+  background: var(--bg-elev);
+  color: var(--fg-strong, var(--fg));
+  font-weight: 600;
+  box-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.06),
+    0 4px 12px rgba(0, 0, 0, 0.04);
+}
+
+.seg-btn.is-active svg,
+.seg-btn[aria-checked="true"] svg {
+  opacity: 1;
+}
+
+:root[data-theme="dark"] .seg-btn.is-active,
+:root[data-theme="dark"] .seg-btn[aria-checked="true"] {
+  box-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.5),
+    0 4px 12px rgba(0, 0, 0, 0.35);
+}
+@media (prefers-color-scheme: dark) {
+  :root[data-theme="auto"] .seg-btn.is-active,
+  :root[data-theme="auto"] .seg-btn[aria-checked="true"] {
+    box-shadow:
+      0 1px 2px rgba(0, 0, 0, 0.5),
+      0 4px 12px rgba(0, 0, 0, 0.35);
+  }
+}
+
+.icon-btn {
+  width: 30px;
+  height: 30px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-md);
+  color: var(--fg-muted);
+  transition: background 120ms ease, color 120ms ease;
+}
+
+.icon-btn:hover {
+  background: var(--bg-hover);
+  color: var(--fg);
+}
+
+/* 一部のアイコンボタンはトグル状態を持つ (例: リアルタイム表示)。
+   ON のときはアクセントカラーで明示する。 */
+.icon-btn.is-active {
+  background: color-mix(in srgb, var(--accent) 16%, transparent);
+  color: var(--accent);
+}
+
+.icon-btn.is-active:hover {
+  background: color-mix(in srgb, var(--accent) 26%, transparent);
+}
+
+.icon-btn svg {
+  width: 17px;
+  height: 17px;
+}
+
+/* =========================================================
+   Body
+   ========================================================= */
+.body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* ---------- Today row ------------------------------------- */
+.today {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+}
+
+.today-label {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--fg-faint);
+}
+
+.today-date {
+  font-size: 13px;
+  color: var(--fg-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---------- Stats: bare numbers, no card ------------------- */
+.stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  padding: 2px 0 6px;
+}
+
+.stat {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+
+.stat-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--fg-faint);
+  font-size: 11px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+.stat-label svg {
+  width: 13px;
+  height: 13px;
+  opacity: 0.7;
+}
+
+.stat-num {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  min-width: 0;
+}
+
+/* The big number — bolder per user feedback */
+.stat-num > span:first-child {
+  font-size: clamp(44px, 7vw, 64px);
+  font-weight: 500;
+  letter-spacing: -0.035em;
+  color: var(--fg);
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.stat-num .unit {
+  font-size: 10.5px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--fg-faint);
+}
+
+.divider {
+  margin: 2px 0 0;
+}
+
+/* =========================================================
+   Calendar header
+   ========================================================= */
+.cal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 10px;
+  gap: 10px;
+}
+
+.cal-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--fg);
+  letter-spacing: -0.005em;
+}
+
+.cal-head-right {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+/* ---------- Period slider (tick scale) -------------------
+   ラベル 4 つは 4 等分グリッドで配置されるので、各中心は 12.5% / 37.5% /
+   62.5% / 87.5%。一方、WebKit のレンジ入力は value=min/max でつまみが
+   トラック左/右端に貼り付くため、何もしないとつまみ中心は 0%+(thumb_w/2)
+   〜 100%-(thumb_w/2) を往復し、ラベル中心とずれる。
+   そこでスライダー本体を左右に `12.5% - 7px` ずつインセットして、つまみ
+   中心の到達範囲 = ラベル中心 になるよう揃える。 */
+.period-slider {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  width: 200px;
+}
+
+.period-ticks {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  font-size: 10px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.04em;
+  color: var(--fg-faint);
+  user-select: none;
+}
+
+.period-ticks span {
+  text-align: center;
+  cursor: pointer;
+  padding: 1px 0;
+  transition: color 180ms ease;
+}
+
+.period-ticks span:hover { color: var(--fg-muted); }
+
+.period-ticks span.is-active {
+  color: var(--accent);
+  font-weight: 700;
+}
+
+.period-slider input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  /* thumb 幅 14px。詳しい数式はこのブロック頭のコメント参照。 */
+  width: calc(75% + 14px);
+  margin: 0 calc(12.5% - 7px);
+  height: 18px;
+  background: transparent;
+  cursor: pointer;
+  outline: none;
+  padding: 0;
+}
+
+.period-slider input[type="range"]::-webkit-slider-runnable-track {
+  height: 3px;
+  background: var(--border-strong);
+  border-radius: 2px;
+  position: relative;
+}
+
+.period-slider input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  background: var(--bg);
+  border: 2px solid var(--accent);
+  border-radius: 50%;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+  margin-top: -5.5px;
+  cursor: grab;
+  transition: box-shadow 100ms ease;
+}
+
+.period-slider input[type="range"]:hover::-webkit-slider-thumb,
+.period-slider input[type="range"]:focus-visible::-webkit-slider-thumb {
+  box-shadow: 0 0 0 4px rgba(34, 197, 94, 0.18), 0 1px 3px rgba(0,0,0,0.3);
+}
+
+.period-slider input[type="range"]:active::-webkit-slider-thumb {
+  cursor: grabbing;
+}
+
+.cal-nav {
+  display: flex;
+  gap: 2px;
+}
+
+.cal-nav .icon-btn {
+  width: 26px;
+  height: 26px;
+}
+
+.cal-nav .icon-btn svg {
+  width: 14px;
+  height: 14px;
+}
+
+/* =========================================================
+   Heatmap — 6-month layout
+   - top row     : month labels aligned to first week of each month
+   - left column : day-of-week labels (Mon / Wed / Fri visible)
+   - main grid   : 7 rows × N week columns
+   ========================================================= */
+/* Heatmap layout: flexbox-based, with per-render CSS-variable-driven
+   cell sizing so cells expand to fill the available window width. */
+.cal-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-variant-numeric: tabular-nums;
+  /* These vars are overwritten by JS each refresh based on window width
+     and selected period length. */
+  --cell-w: 12px;
+  --cell-h: 12px;
+}
+
+.cal-months-row {
+  display: flex;
+  gap: var(--cell-gap);
+  padding-left: 22px; /* aligns with cells, past the dow axis column */
+  height: 14px;
+  font-size: 10.5px;
+  color: var(--fg-faint);
+  letter-spacing: 0.02em;
+}
+
+.cal-months-row .month-label {
+  width: var(--cell-w);
+  white-space: nowrap;
+  overflow: visible;
+  line-height: 1;
+  align-self: flex-end;
+}
+
+.cal-body {
+  display: flex;
+  gap: 6px;
+  align-items: flex-start;
+}
+
+.cal-dow {
+  display: flex;
+  flex-direction: column;
+  gap: var(--cell-gap);
+  font-size: 10px;
+  color: var(--fg-faint);
+  text-transform: lowercase;
+  padding-top: 0;
+}
+
+.cal-dow span {
+  height: var(--cell-h);
+  line-height: var(--cell-h);
+  display: block;
+  min-width: 16px;
+}
+
+.cal-weeks {
+  display: flex;
+  gap: var(--cell-gap);
+}
+
+.cal-col {
+  display: flex;
+  flex-direction: column;
+  gap: var(--cell-gap);
+}
+
+.cell {
+  width: var(--cell-w);
+  height: var(--cell-h);
+  border-radius: 2px;
+  background: var(--cell-0);
+  display: block;
+}
+
+.cell[data-level="1"] { background: var(--cell-1); }
+.cell[data-level="2"] { background: var(--cell-2); }
+.cell[data-level="3"] { background: var(--cell-3); }
+.cell[data-level="4"] { background: var(--cell-4); }
+
+.cell.is-future,
+.cell.is-out {
+  background: transparent;
+  outline: 1px dashed var(--border);
+  outline-offset: -1px;
+}
+
+/* hover はツールチップで内容を伝えるため、見た目の変化は最小限。
+   以前はセルを 1.35 倍にスケールさせていたが、もっさり感とレイアウト
+   覗き見の原因になるため撤去。代わりに枠線で控えめに強調する。 */
+.cell:hover:not(.is-future):not(.is-out) {
+  outline: 1px solid var(--fg-muted);
+  outline-offset: -1px;
+}
+
+/* =========================================================
+   Analytics view
+   ========================================================= */
+.view-analytics {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  padding-top: 4px;
+  /* 最後のセクションがフッターの罫線に張り付くのを防ぐ呼吸スペース。 */
+  padding-bottom: 24px;
+}
+
+/* スコープ切替セグメント (今日 / 7日 / 今月 / 全期間)。
+   ヘッダの seg と同じ見た目を踏襲。 */
+.analytics-scope {
+  display: flex;
+  justify-content: flex-end;
+}
+
+/* ---------- KPI row ---------------------------------------- */
+.kpi-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  align-items: stretch;
+}
+
+@media (max-width: 880px) {
+  .kpi-row { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 480px) {
+  .kpi-row { grid-template-columns: 1fr; }
+}
+
+/* KPI: 罫線無し、背景の濃淡だけで「カード」感を最小限に。 */
+.kpi {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px 16px;
+  background: var(--bg-soft);
+  border-radius: var(--radius-md);
+  min-width: 0;
+}
+
+.kpi-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--fg-faint);
+}
+
+.kpi-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+  color: var(--accent);
+  flex: none;
+}
+
+.kpi-icon svg { width: 14px; height: 14px; }
+
+.kpi-value {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  font-variant-numeric: tabular-nums;
+  color: var(--fg);
+  flex-wrap: wrap;
+}
+
+.kpi-value > b {
+  font-size: 22px;
+  font-weight: 600;
+  letter-spacing: -0.015em;
+  line-height: 1.1;
+}
+
+.kpi-value .kpi-unit {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--fg-faint);
+}
+
+.kpi-value .kpi-sep {
+  color: var(--fg-faint);
+  font-size: 12px;
+}
+
+.kpi-value .kpi-sub {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 4px;
+  font-size: 11px;
+  color: var(--fg-muted);
+  margin-left: 4px;
+}
+
+/* ---------- Trip cards (マウスの旅 / スクロール宇宙) -----
+   ローカル計測のおまけ機能。マウス移動距離やスクロール累計を
+   m / km に換算し、ランドマーク (富士山・カーマンライン等) と比較する。 */
+.trip-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+@media (max-width: 560px) {
+  .trip-row { grid-template-columns: 1fr; }
+}
+
+.trip-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 14px 18px 16px;
+  background: var(--bg-soft);
+  border-radius: var(--radius-md);
+  min-width: 0;
+}
+
+.trip-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--fg-faint);
+}
+
+.trip-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  color: var(--accent);
+  flex: none;
+}
+
+.trip-icon svg {
+  width: 14px;
+  height: 14px;
+}
+
+.trip-label {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+
+.trip-value {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  font-variant-numeric: tabular-nums;
+  margin-top: 2px;
+}
+
+.trip-num {
+  font-size: 30px;
+  font-weight: 700;
+  letter-spacing: -0.025em;
+  line-height: 1.1;
+  color: var(--fg);
+}
+
+.trip-unit {
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  color: var(--fg-faint);
+}
+
+.trip-progress {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.trip-bar {
+  height: 4px;
+  background: var(--bg-quiet);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.trip-fill {
+  height: 100%;
+  width: 0;
+  background: var(--accent);
+  border-radius: inherit;
+  transition: width 700ms cubic-bezier(.22, 1, .36, 1);
+}
+
+.trip-cmp {
+  margin: 0;
+  font-size: 12.5px;
+  color: var(--fg-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .trip-fill { transition: none; }
+}
+
+/* ---------- 分析タブのセクション ---------------------------
+   - グレー罫線を撤去 (「並べたカード」感を解消)
+   - 背景は bg-soft のみで、コンテンツの存在感はタイポと余白で表現
+   - セクション見出しは下罫線無し。タイトルとサブを近づけて簡素に */
+.analytics-section {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 16px 18px 18px;
+  background: var(--bg-soft);
+  border-radius: var(--radius-md);
+  min-width: 0;
+}
+
+.section-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.section-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  color: var(--accent);
+  flex: none;
+}
+
+.section-icon svg { width: 15px; height: 15px; }
+
+.section-title { line-height: 1.2; }
+
+.section-title {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--fg);
+}
+
+.section-sub {
+  font-size: 11px;
+  color: var(--fg-faint);
+}
+
+/* ---------- Hour heatmap (24 × 1) -------------------------
+   選択スコープ (今日 / 7日 / 今月 / 全期間) で絞った全日を時間帯ごとに
+   合算した値を、1 行 24 セルで表示する。曜日軸は廃止。 */
+.hour-heatmap {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-variant-numeric: tabular-nums;
+}
+
+.hour-heatmap .hh-hours {
+  display: grid;
+  grid-template-columns: repeat(24, 1fr);
+  font-size: 10px;
+  color: var(--fg-faint);
+  letter-spacing: 0.02em;
+}
+
+.hour-heatmap .hh-hour-cell {
+  text-align: left;
+  padding-left: 1px;
+}
+
+.hour-heatmap .hh-grid {
+  display: grid;
+  grid-template-columns: repeat(24, 1fr);
+  gap: 3px;
+}
+
+.hour-heatmap .hh-cell {
+  height: 22px;
+  background: var(--cell-0);
+  border-radius: 3px;
+}
+
+.hour-heatmap .hh-cell[data-level="1"] { background: var(--cell-1); }
+.hour-heatmap .hh-cell[data-level="2"] { background: var(--cell-2); }
+.hour-heatmap .hh-cell[data-level="3"] { background: var(--cell-3); }
+.hour-heatmap .hh-cell[data-level="4"] { background: var(--cell-4); }
+
+.hour-heatmap .hh-cell:hover {
+  outline: 1px solid var(--fg-muted);
+  outline-offset: -1px;
+}
+
+/* ---------- Breakdown bars -------------------------------- */
+.analytics-row {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr;
+  gap: 22px;
+  align-items: start;
+}
+
+.breakdown-bars {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 4px 2px 2px;
+  min-width: 0;
+}
+
+.breakdown-empty {
+  font-size: 12px;
+  padding: 8px 0;
+}
+
+.br-row {
+  display: grid;
+  grid-template-columns: 64px 1fr 64px;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+.br-label {
+  color: var(--fg-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.br-track {
+  display: block;
+  height: 10px;
+  background: var(--bg-soft);
+  border-radius: 999px;
+  overflow: hidden;
+  position: relative;
+}
+
+.br-fill {
+  display: block;
+  height: 100%;
+  background: var(--accent);
+  border-radius: inherit;
+}
+
+.br-num {
+  text-align: right;
+  color: var(--fg);
+  font-weight: 500;
+}
+
+/* =========================================================
+   List view
+   ========================================================= */
+.view-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.view[hidden] {
+  display: none !important;
+}
+
+/* タブ切替時に新しいビューがふわっと現れる小さな演出。
+   約 180ms とごく短く、画面遷移の唐突感だけを和らげる。 */
+@keyframes view-fade-in {
+  from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.view.is-entering {
+  animation: view-fade-in 180ms cubic-bezier(.22, 1, .36, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .view.is-entering { animation: none; }
+}
+
+.list-head {
+  display: grid;
+  grid-template-columns: 1fr 100px 100px;
+  font-size: 10.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--fg-faint);
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--border);
+}
+
+.list-head .num-col {
+  text-align: right;
+}
+
+.list-body {
+  display: flex;
+  flex-direction: column;
+  max-height: 340px;
+  overflow-y: auto;
+}
+
+.list-row {
+  display: grid;
+  grid-template-columns: 1fr 100px 100px;
+  font-variant-numeric: tabular-nums;
+  padding: 9px 10px;
+  font-size: 13px;
+  border-bottom: 1px solid var(--border);
+  color: var(--fg);
+}
+
+.list-row:last-child {
+  border-bottom: 0;
+}
+
+.list-row .num {
+  text-align: right;
+  color: var(--fg);
+  font-weight: 500;
+}
+
+/* =========================================================
+   Footer
+   ========================================================= */
+.foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 0 0;
+  border-top: 1px solid var(--border);
+  margin-top: 8px;
+  font-size: 12px;
+  color: var(--fg-muted);
+}
+
+.foot-month b {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--fg);
+}
+
+.muted {
+  color: var(--fg-faint);
+}
+
+.legend {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 10.5px;
+  color: var(--fg-faint);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.legend-cells {
+  display: inline-flex;
+  gap: 2px;
+}
+
+.legend-cells .cell {
+  width: 9px;
+  height: 9px;
+}
+
+/* =========================================================
+   Tooltip
+   ========================================================= */
+.tooltip {
+  position: fixed;
+  background: var(--fg);
+  color: var(--bg);
+  padding: 5px 8px;
+  border-radius: 5px;
+  font-size: 11px;
+  white-space: nowrap;
+  pointer-events: none;
+  z-index: 50;
+  font-variant-numeric: tabular-nums;
+  box-shadow: var(--shadow-md);
+}
+
+.tooltip b {
+  font-weight: 600;
+}
+
+/* =========================================================
+   Settings window
+   ========================================================= */
+.settings-body {
+  padding: 0;
+  background: var(--bg-soft);
+  min-height: 100vh;
+}
+
+.set-card {
+  background: var(--bg);
+  margin: 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  flex-direction: column;
+  min-height: calc(100vh - 28px);
+}
+
+.set-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--border);
+}
+
+.set-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--fg);
+}
+
+.set-body {
+  flex: 1;
+  padding: 4px 6px;
+}
+
+.set-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--border);
+}
+
+.set-row:last-child {
+  border-bottom: 0;
+}
+
+.set-row-text .lbl {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--fg);
+}
+
+.set-row-text .sub {
+  font-size: 11.5px;
+  color: var(--fg-faint);
+  margin-top: 3px;
+}
+
+.set-foot {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 12px 18px;
+  border-top: 1px solid var(--border);
+}
+
+.btn {
+  padding: 7px 14px;
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  font-weight: 500;
+  border: 1px solid transparent;
+  transition: background 120ms ease, border-color 120ms ease;
+}
+
+.btn.ghost {
+  border-color: var(--border);
+  color: var(--fg-muted);
+  background: var(--bg);
+}
+
+.btn.ghost:hover {
+  background: var(--bg-hover);
+  color: var(--fg);
+}
+
+.btn.primary {
+  background: var(--accent);
+  color: var(--accent-fg);
+}
+
+.btn.primary:hover {
+  background: var(--accent-hover);
+}
+
+/* 破壊的アクション (保存データの全削除) 用。
+   confirm パターンの 1 段目「削除」と 2 段目「本当に削除」の両方で利用。 */
+.btn.danger {
+  background: #dc2626;
+  color: #ffffff;
+}
+
+.btn.danger:hover {
+  background: #b91c1c;
+}
+
+.btn.danger:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.storage-actions {
+  display: inline-flex;
+  gap: 6px;
+  flex: none;
+}
+
+/* Toggle */
+.toggle {
+  position: relative;
+  display: inline-block;
+  width: 40px;
+  height: 22px;
+  flex: none;
+}
+
+.toggle input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+  position: absolute;
+}
+
+.toggle .track {
+  display: block;
+  width: 40px;
+  height: 22px;
+  background: var(--border-strong);
+  border-radius: 999px;
+  transition: background 160ms ease;
+  position: relative;
+}
+
+.toggle .thumb {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 18px;
+  height: 18px;
+  background: #ffffff;
+  border-radius: 50%;
+  transition: transform 160ms ease;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.18);
+}
+
+.toggle input:checked + .track {
+  background: var(--accent);
+}
+
+.toggle input:checked + .track .thumb {
+  transform: translateX(18px);
+}
+
+/* Num input */
+.num-input {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  background: var(--bg);
+  flex: none;
+}
+
+.num-input button {
+  width: 30px;
+  height: 30px;
+  font-size: 15px;
+  color: var(--fg-muted);
+  font-weight: 500;
+}
+
+.num-input button:hover {
+  background: var(--bg-hover);
+  color: var(--fg);
+}
+
+.num-input input {
+  width: 54px;
+  height: 30px;
+  text-align: center;
+  border: 0;
+  background: transparent;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--fg);
+  font-variant-numeric: tabular-nums;
+  appearance: textfield;
+  -moz-appearance: textfield;
+}
+
+.num-input input::-webkit-outer-spin-button,
+.num-input input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.num-input .unit {
+  padding: 0 10px 0 6px;
+  font-size: 12px;
+  color: var(--fg-faint);
+}
+
+/* Toast */
+.toast {
+  position: fixed;
+  bottom: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--fg);
+  color: var(--bg);
+  padding: 8px 14px;
+  border-radius: 999px;
+  font-size: 12px;
+  box-shadow: var(--shadow-md);
+  animation: toast-in 200ms ease-out;
+}
+
+@keyframes toast-in {
+  from { opacity: 0; transform: translate(-50%, 8px); }
+  to   { opacity: 1; transform: translate(-50%, 0); }
+}

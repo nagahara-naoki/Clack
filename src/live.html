@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="ja" data-theme="auto" data-tauri-drag-region>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Clack Live</title>
+    <link rel="stylesheet" href="live.css" />
+  </head>
+  <body data-tauri-drag-region>
+    <header class="live-header" data-tauri-drag-region>
+      <span class="live-title">Clack</span>
+      <div class="header-controls" data-tauri-drag-region="false">
+        <button id="btn-stack" class="live-btn" title="スタックモード" aria-label="Stack mode" data-tauri-drag-region="false">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M4 7h16M4 12h16M4 17h16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+          </svg>
+        </button>
+        <button id="btn-close" class="live-btn" title="閉じる" aria-label="Close" data-tauri-drag-region="false">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" />
+          </svg>
+        </button>
+      </div>
+    </header>
+    <div class="live-bar" id="live-bar" data-tauri-drag-region></div>
+    <script src="live.js"></script>
+  </body>
+</html>

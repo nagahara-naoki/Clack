@@ -1,0 +1,320 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Clack — 毎日の入力を、暦の上に。</title>
+    <meta name="description" content="キーボードとマウスの操作を 1 日 1 マスで記録する、ローカル完結のデスクトップアプリ。" />
+    <meta property="og:title" content="Clack" />
+    <meta property="og:description" content="毎日の入力を、暦の上に。" />
+    <meta property="og:type" content="website" />
+    <meta property="og:image" content="icon-512.png" />
+    <meta name="theme-color" content="#0b1d14" />
+    <link rel="icon" type="image/svg+xml" href="icon.svg" />
+    <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png" />
+    <link rel="apple-touch-icon" href="icon-256.png" />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="wrap">
+        <a class="brand" href="#top" aria-label="Clack">
+          <img class="brand-icon" src="icon.svg" alt="" width="22" height="22" />
+          <span class="brand-name">Clack</span>
+        </a>
+        <nav class="nav">
+          <a href="#calendar">カレンダー</a>
+          <a href="#analytics">分析</a>
+          <a href="#trip">旅</a>
+          <a href="#live">リアルタイム</a>
+          <a href="#backup">バックアップ</a>
+          <a href="#privacy">プライバシー</a>
+          <a class="nav-strong" href="https://github.com/YOUR-USERNAME/clack" target="_blank" rel="noopener">GitHub →</a>
+        </nav>
+      </div>
+    </header>
+
+    <main id="top">
+      <!-- ======================================================
+           Hero
+      ======================================================= -->
+      <section class="hero">
+        <div class="wrap">
+          <img class="hero-icon" src="icon.svg" alt="Clack" width="96" height="96" />
+          <h1 class="display">毎日の入力を、暦の上に。</h1>
+          <p class="lead">キーボードとマウスを 1 日 1 マスで記録する、ローカル完結のデスクトップアプリ。</p>
+
+          <div class="hero-cta">
+            <div class="download-row" id="download-row">
+              <a class="btn btn-primary btn-lg dl-win" href="https://github.com/YOUR-USERNAME/clack/releases/latest" target="_blank" rel="noopener">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M3 5.5L11 4v8H3zM12 3.8L21 2.5V12h-9zM3 13h8v8L3 19.5zM12 13h9v8.5L12 20z" fill="currentColor" />
+                </svg>
+                Windows 版
+              </a>
+              <a class="btn btn-ghost btn-lg dl-mac" href="https://github.com/YOUR-USERNAME/clack/releases/latest" target="_blank" rel="noopener">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M16.5 2.5c.1 1.3-.4 2.5-1.2 3.3-.9.9-2 1.5-3.3 1.4-.1-1.3.4-2.5 1.2-3.3.9-.9 2.1-1.4 3.3-1.4zm3.7 17c-.6 1.4-1 2-1.8 3.2-1.1 1.7-2.6 3.8-4.5 3.8h-.1c-1.7 0-2.2-1.1-4.4-1.1-2.3 0-2.8 1.1-4.5 1.1H4.8c-1.9 0-3.4-1.9-4.5-3.6-3-4.7-3.3-10.2-1.5-13.1 1.3-2.1 3.3-3.3 5.2-3.3 1.9 0 3.2 1.1 4.7 1.1 1.5 0 2.5-1.1 4.7-1.1 1.7 0 3.5.9 4.8 2.5-4.2 2.3-3.5 8.3 1.0 9.6z" transform="translate(2 0)" fill="currentColor" />
+                </svg>
+                macOS 版
+              </a>
+            </div>
+            <p class="hero-meta">MIT License ・ 約 5 MB ・ <span class="os-note">Windows 10/11 ・ macOS 10.15+</span></p>
+            <details class="install-notes">
+              <summary>インストール時の注意 (初回のみ)</summary>
+              <div class="install-grid">
+                <div class="install-card">
+                  <h4>Windows</h4>
+                  <ol>
+                    <li>インストーラを実行</li>
+                    <li>SmartScreen の警告 → <b>「詳細情報」→「実行」</b></li>
+                  </ol>
+                </div>
+                <div class="install-card">
+                  <h4>macOS</h4>
+                  <ol>
+                    <li><code>.dmg</code> を開き <code>Clack.app</code> を Applications にドラッグ</li>
+                    <li>アプリを <b>右クリック → 開く</b> (初回のみ)</li>
+                    <li>システム設定 → プライバシーとセキュリティ → <b>入力監視で Clack を ON</b></li>
+                    <li>同じく <b>アクセシビリティでも Clack を ON</b></li>
+                  </ol>
+                </div>
+              </div>
+            </details>
+          </div>
+
+          <figure class="hero-heatmap" aria-label="アクティビティビューのサンプル">
+            <div class="hh-months" id="hero-months"></div>
+            <div class="hh-grid" id="hero-grid"></div>
+            <figcaption class="hh-legend">
+              <span>少ない</span>
+              <span class="legend-cell" data-level="0"></span>
+              <span class="legend-cell" data-level="1"></span>
+              <span class="legend-cell" data-level="2"></span>
+              <span class="legend-cell" data-level="3"></span>
+              <span class="legend-cell" data-level="4"></span>
+              <span>多い</span>
+            </figcaption>
+          </figure>
+        </div>
+      </section>
+
+      <!-- ======================================================
+           Calendar
+      ======================================================= -->
+      <section id="calendar" class="chapter">
+        <div class="wrap chapter-wrap">
+          <div class="chapter-text">
+            <p class="kicker">記録</p>
+            <h2>1 日が 1 マス。365 日がひと目に。</h2>
+            <p>濃いマスはよく打った日、淡いマスはひと休み。キーとマウスを合わせた活動量で 5 段階に色分けされ、1ヶ月から 12ヶ月まで自由に伸縮できます。</p>
+            <p class="muted">マスにカーソルを合わせれば日付ごとの内訳が、過去に遡れば任意の月の動きが浮かびます。</p>
+          </div>
+          <div class="chapter-visual">
+            <div class="mini-cal">
+              <div class="mc-head" id="mc-head"></div>
+              <div class="mc-grid" id="mc-grid"></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ======================================================
+           Analytics
+      ======================================================= -->
+      <section id="analytics" class="chapter chapter-alt">
+        <div class="wrap chapter-wrap chapter-reverse">
+          <div class="chapter-text">
+            <p class="kicker">分析</p>
+            <h2>数字の奥にある癖を、静かに浮かばせる。</h2>
+            <p>連続入力した日数、アクティブ時間、最も使ったキー、時間帯ごとの活動量。スコープは今日 / 7 日 / 今月 / 全期間からワンクリックで切り替わります。</p>
+            <p class="muted">キーとマウスの内訳は降順の横棒チャート。Shift + 1 のような同時押しは 1 つにまとまり、ノイズの少ない読みやすい結果に整います。</p>
+          </div>
+          <div class="chapter-visual">
+            <div class="mock-analytics">
+              <div class="mock-kpi mock-kpi-4">
+                <div class="mk">
+                  <span class="mk-label">連続</span>
+                  <span class="mk-value">42<small>日</small></span>
+                </div>
+                <div class="mk">
+                  <span class="mk-label">最多</span>
+                  <span class="mk-value">14,523<small>打鍵</small></span>
+                </div>
+                <div class="mk">
+                  <span class="mk-label">アクティブ</span>
+                  <span class="mk-value">5<small>h</small>27<small>m</small></span>
+                </div>
+                <div class="mk">
+                  <span class="mk-label">累計</span>
+                  <span class="mk-value">312k<small>打鍵</small></span>
+                </div>
+              </div>
+              <div class="mock-bars">
+                <div class="mb-row"><span>A</span><span class="mb-track"><span class="mb-fill" style="--w:92%"></span></span><span>21,348</span></div>
+                <div class="mb-row"><span>E</span><span class="mb-track"><span class="mb-fill" style="--w:78%"></span></span><span>18,041</span></div>
+                <div class="mb-row"><span>Space</span><span class="mb-track"><span class="mb-fill" style="--w:66%"></span></span><span>15,228</span></div>
+                <div class="mb-row"><span>Enter</span><span class="mb-track"><span class="mb-fill" style="--w:42%"></span></span><span>9,710</span></div>
+                <div class="mb-row"><span>BS</span><span class="mb-track"><span class="mb-fill" style="--w:35%"></span></span><span>8,094</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ======================================================
+           Trip — mouse distance / scroll height landmarks
+      ======================================================= -->
+      <section id="trip" class="chapter">
+        <div class="wrap chapter-wrap">
+          <div class="chapter-text">
+            <p class="kicker">旅</p>
+            <h2>マウスで歩いて、スクロールで宇宙へ。</h2>
+            <p>カーソルの移動距離とスクロール量を毎日記録し、富士山・東京タワー・国際宇宙ステーションなどのランドマークと比較。普段の作業が、ささやかな旅になります。</p>
+            <p class="muted">単位は m / km。「今日 48 m」「累計で富士山を 1.2 倍登った」など、控えめな数字でそっと寄り添います。</p>
+          </div>
+          <div class="chapter-visual">
+            <div class="mock-trip">
+              <div class="mt-card">
+                <div class="mt-head">
+                  <span class="mt-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24"><circle cx="4" cy="12" r="1.6" fill="currentColor"/><path d="M5.5 12h12.5" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-dasharray="2.4 2.6"/><path d="M16 8l4 4-4 4" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                  </span>
+                  <span class="mt-label">マウスで歩いた距離</span>
+                </div>
+                <div class="mt-value"><b>48.3</b><span>m</span></div>
+                <div class="mt-bar"><div class="mt-fill" style="--w:62%"></div></div>
+                <p class="mt-cmp">100m 走まで 48%</p>
+              </div>
+              <div class="mt-card">
+                <div class="mt-head">
+                  <span class="mt-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24"><path d="M3 20l5-9 4 6 3-4 6 7H3z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" stroke-linecap="round"/></svg>
+                  </span>
+                  <span class="mt-label">スクロールで上った高さ</span>
+                </div>
+                <div class="mt-value"><b>312</b><span>m</span></div>
+                <div class="mt-bar"><div class="mt-fill" style="--w:94%"></div></div>
+                <p class="mt-cmp">東京タワーまで 94%</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ======================================================
+           Live
+      ======================================================= -->
+      <section id="live" class="chapter">
+        <div class="wrap chapter-wrap">
+          <div class="chapter-text">
+            <p class="kicker">リアルタイム</p>
+            <h2>目の端で、流れていく。</h2>
+            <p>常に最前面に置ける小窓に、押したキーが即時に並びます。Shift + 1 のような同時押しは 1 つに統合され、読みやすい流れに整います。</p>
+            <p class="muted">入力が止まれば窓も自然に縮む。スタックモードに切り替えれば、直近 100 件まで残せます。</p>
+          </div>
+          <div class="chapter-visual">
+            <div class="live-mock" aria-hidden="true">
+              <div class="lm-header">
+                <span>CLACK · LIVE</span>
+                <span class="lm-dots"><i></i><i></i></span>
+              </div>
+              <div class="lm-bar">
+                <span class="lm-chip">H</span>
+                <span class="lm-chip">e</span>
+                <span class="lm-chip">l</span>
+                <span class="lm-chip">l</span>
+                <span class="lm-chip">o</span>
+                <span class="lm-chip">Space</span>
+                <span class="lm-chip">Shift+W</span>
+                <span class="lm-chip lm-recent">↵ Enter</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ======================================================
+           Backup
+      ======================================================= -->
+      <section id="backup" class="chapter chapter-alt">
+        <div class="wrap chapter-wrap chapter-reverse">
+          <div class="chapter-text">
+            <p class="kicker">バックアップ</p>
+            <h2>持ち出すのも、戻すのも、1 クリック。</h2>
+            <p>全データを JSON で完全エクスポート / インポート、CSV で表計算ソフト用に書き出し。バックアップから戻すときは 2 段階確認が入るので、誤上書きの心配はありません。</p>
+            <p class="muted">CSV の列は <code>date,keys,mouse,total,h0..h23</code>。時間帯別カラムを含むので、ExcelやNotebookでそのまま分析に使えます。</p>
+          </div>
+          <div class="chapter-visual">
+            <div class="mock-backup">
+              <div class="mb-format mb-format-active">
+                <span class="mb-ext">.json</span>
+                <span class="mb-desc">完全バックアップ</span>
+              </div>
+              <div class="mb-format mb-format-active">
+                <span class="mb-ext">.csv</span>
+                <span class="mb-desc">表計算ソフト用</span>
+              </div>
+              <div class="mb-format">
+                <span class="mb-ext">⌫</span>
+                <span class="mb-desc">完全削除 (確認あり)</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ======================================================
+           Privacy
+      ======================================================= -->
+      <section id="privacy" class="quiet">
+        <div class="wrap quiet-wrap">
+          <p class="kicker">プライバシー</p>
+          <h2 class="quiet-title">ネットワーク呼び出しは、0&nbsp;件。</h2>
+          <p class="quiet-lead">HTTP や TCP を扱うライブラリはコードに含まれていません。データは端末内のユーザーデータディレクトリ ─ Windows なら <code>%APPDATA%\Clack\</code>、macOS なら <code>~/Library/Application Support/Clack/</code> ─ に置かれ、端末を離れる構造的な経路がそもそも存在しません。打鍵の順序やタイミングは記録せず、保存されるのはキー識別子の回数だけ。すべて MIT ライセンスで公開されており、確認は <code>grep</code> から始められます。</p>
+        </div>
+      </section>
+
+      <!-- ======================================================
+           Final CTA
+      ======================================================= -->
+      <section class="final">
+        <div class="wrap final-wrap">
+          <h2>はじめてみる。</h2>
+          <div class="download-row">
+            <a class="btn btn-primary btn-lg dl-win" href="https://github.com/YOUR-USERNAME/clack/releases/latest" target="_blank" rel="noopener">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M3 5.5L11 4v8H3zM12 3.8L21 2.5V12h-9zM3 13h8v8L3 19.5zM12 13h9v8.5L12 20z" fill="currentColor" />
+              </svg>
+              Windows 版
+            </a>
+            <a class="btn btn-ghost btn-lg dl-mac" href="https://github.com/YOUR-USERNAME/clack/releases/latest" target="_blank" rel="noopener">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M16.5 2.5c.1 1.3-.4 2.5-1.2 3.3-.9.9-2 1.5-3.3 1.4-.1-1.3.4-2.5 1.2-3.3.9-.9 2.1-1.4 3.3-1.4zm3.7 17c-.6 1.4-1 2-1.8 3.2-1.1 1.7-2.6 3.8-4.5 3.8h-.1c-1.7 0-2.2-1.1-4.4-1.1-2.3 0-2.8 1.1-4.5 1.1H4.8c-1.9 0-3.4-1.9-4.5-3.6-3-4.7-3.3-10.2-1.5-13.1 1.3-2.1 3.3-3.3 5.2-3.3 1.9 0 3.2 1.1 4.7 1.1 1.5 0 2.5-1.1 4.7-1.1 1.7 0 3.5.9 4.8 2.5-4.2 2.3-3.5 8.3 1.0 9.6z" transform="translate(2 0)" fill="currentColor" />
+              </svg>
+              macOS 版
+            </a>
+          </div>
+          <p class="muted">あるいは <a href="https://github.com/YOUR-USERNAME/clack" target="_blank" rel="noopener">ソースから読む</a>。</p>
+        </div>
+      </section>
+    </main>
+
+    <footer class="foot">
+      <div class="wrap foot-wrap">
+        <span class="foot-brand">
+          <img src="icon.svg" alt="" width="18" height="18" />
+          Clack
+        </span>
+        <span class="foot-links">
+          <a href="https://github.com/YOUR-USERNAME/clack" target="_blank" rel="noopener">GitHub</a>
+          <a href="https://github.com/YOUR-USERNAME/clack/releases" target="_blank" rel="noopener">Releases</a>
+          <a href="https://github.com/YOUR-USERNAME/clack/issues" target="_blank" rel="noopener">Issues</a>
+        </span>
+        <span class="foot-meta">MIT License</span>
+      </div>
+    </footer>
+
+    <script src="script.js"></script>
+  </body>
+</html>
