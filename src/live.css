@@ -90,7 +90,7 @@ html:active, body:active { cursor: grabbing; }
   cursor: pointer;
   padding: 0;
   line-height: 1;
-  transition: background 120ms ease, color 120ms ease;
+  transition: background 70ms ease, color 70ms ease;
 }
 
 .live-btn:hover {
@@ -146,7 +146,7 @@ html:active, body:active { cursor: grabbing; }
   white-space: nowrap;
   /* 半透明背景でも文字が滲まないよう、ごく薄い影で輪郭を補強。 */
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.55);
-  animation: chip-in 130ms cubic-bezier(.22, 1, .36, 1);
+  animation: chip-in 70ms linear;
 }
 
 /* 最新チップ: 不透明度 100% の白 + 微発光で「いま入力された 1 個」を強調。
@@ -161,13 +161,20 @@ html:active, body:active { cursor: grabbing; }
 /* フェードアウト: 縦に少し抜けながら消える。
    非スタック時の「スワップ」演出と相性が良い。 */
 .chip.is-fading {
-  animation: chip-out 160ms cubic-bezier(.4, 0, .68, 0) forwards;
+  animation: chip-out 80ms linear forwards;
 }
 
 @keyframes chip-in {
-  from { opacity: 0; transform: translateY(6px) scale(0.94); }
-  to   { opacity: 1; transform: translateY(0)   scale(1); }
+  from { opacity: 0; }
+  to   { opacity: 1; }
 }
 @keyframes chip-out {
-  to { opacity: 0; transform: translateY(-6px) scale(0.94); }
+  to { opacity: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .chip,
+  .chip.is-fading {
+    animation: none;
+  }
 }

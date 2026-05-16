@@ -803,6 +803,10 @@
   function setupTabs() {
     const tabIds = ["cal", "analytics", "list"];
     const activate = (which) => {
+      const prevIndex = tabIds.indexOf(state.currentTab);
+      const nextIndex = tabIds.indexOf(which);
+      const dir = nextIndex >= prevIndex ? "forward" : "back";
+      if (which === state.currentTab) return;
       state.currentTab = which;
       for (const t of tabIds) {
         const btn = $(`tab-${t}`);
@@ -815,10 +819,10 @@
         if (view) {
           view.hidden = !on;
           if (on) {
-            // 表示されるビューに短いフェードインアニメーションを当て直す。
-            view.classList.remove("is-entering");
+            // 表示されるビューに短い方向付きアニメーションを当て直す。
+            view.classList.remove("is-entering", "is-forward", "is-back");
             // フレームを 1 回挟まないと animation 再起動しない
-            requestAnimationFrame(() => view.classList.add("is-entering"));
+            requestAnimationFrame(() => view.classList.add("is-entering", `is-${dir}`));
           }
         }
       }
@@ -1001,52 +1005,39 @@
     container.appendChild(frag);
   }
 
-  /** 時間帯ヒートマップ: 24 セル 1 行。
+  /** 時間帯リズムチャート: 24 本の縦バー。
    *  分析タブのスコープ (今日 / 7日 / 今月 / 全期間) で絞った全日を時間帯
-   *  ごとに合算した値を、max で正規化して 0..4 レベルの色で表示する。 */
+   *  ごとに合算した値を、max で正規化して「山」として表示する。 */
   function buildHourHeatmap(hoursArr, max) {
     const wrap = $("hour-heatmap");
     wrap.replaceChildren();
 
-    // 上段: 3 時間ごとの時刻目盛り (0/3/6/9/12/15/18/21)。
-    const labels = document.createElement("div");
-    labels.className = "hh-hours";
-    for (let h = 0; h < 24; h++) {
-      const cell = document.createElement("span");
-      cell.className = "hh-hour-cell";
-      cell.textContent = (h % 3 === 0) ? String(h) : "";
-      labels.appendChild(cell);
-    }
-
-    // 下段: 24 セル。
-    const grid = document.createElement("div");
-    grid.className = "hh-grid";
-    grid.setAttribute("data-empty", max === 0 ? "true" : "false");
     const safeMax = max > 0 ? max : 1;
-    const threshold = [
-      Math.ceil(safeMax * 0.10),
-      Math.ceil(safeMax * 0.30),
-      Math.ceil(safeMax * 0.55),
-      Math.ceil(safeMax * 0.80),
-    ];
+    const grid = document.createElement("div");
+    grid.className = "hh-chart";
+    grid.setAttribute("data-empty", max === 0 ? "true" : "false");
+
     for (let h = 0; h < 24; h++) {
       const v = safeInt((hoursArr && hoursArr[h]) || 0);
-      let level = 0;
-      if (v > 0) {
-        if (v >= threshold[3]) level = 4;
-        else if (v >= threshold[2]) level = 3;
-        else if (v >= threshold[1]) level = 2;
-        else level = 1;
-      }
+      const pct = v > 0 ? Math.max(8, Math.round((v / safeMax) * 100)) : 2;
       const cell = document.createElement("span");
       cell.className = "hh-cell";
-      if (level > 0) cell.dataset.level = String(level);
       cell.dataset.hour = String(h);
       cell.dataset.val = String(v);
+      cell.setAttribute("aria-label", L().hourTooltip(h, fmtNum(v)));
+      cell.style.setProperty("--h", `${pct}%`);
+      cell.style.setProperty("--delay", `${h * 10}ms`);
+
+      const bar = document.createElement("span");
+      bar.className = "hh-bar";
+      const label = document.createElement("span");
+      label.className = "hh-label";
+      label.textContent = (h % 3 === 0) ? String(h) : "";
+      cell.append(bar, label);
       grid.appendChild(cell);
     }
 
-    wrap.append(labels, grid);
+    wrap.appendChild(grid);
   }
 
   /** PAUSED バッジの表示/非表示。 */

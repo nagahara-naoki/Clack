@@ -5,11 +5,12 @@
 
 /* ---------- Tokens (Light, default) ----------------------- */
 :root {
-  --bg: #ffffff;
-  --bg-soft: #fafafa;
+  --bg: #fbfcfb;
+  --bg-soft: #f3f6f3;
+  --bg-quiet: #eef3ef;
   --bg-elev: #ffffff;
-  --bg-hover: #f3f4f6;
-  --bg-active: #e5e7eb;
+  --bg-hover: #e9efe9;
+  --bg-active: #dde7df;
 
   --fg: #111113;
   --fg-muted: #6b7280;
@@ -21,6 +22,11 @@
   --accent: #16a34a;
   --accent-hover: #15803d;
   --accent-fg: #ffffff;
+  --accent-2: #0f766e;
+  --accent-3: #b45309;
+  --accent-soft: rgba(22, 163, 74, 0.12);
+  --accent-2-soft: rgba(15, 118, 110, 0.12);
+  --accent-3-soft: rgba(180, 83, 9, 0.12);
 
   /* GitHub-style green heatmap */
   --cell-0: #ebedf0;
@@ -37,7 +43,7 @@
   --radius-lg: 12px;
 
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.04);
-  --shadow-md: 0 4px 14px rgba(0, 0, 0, 0.06);
+  --shadow-md: 0 10px 34px rgba(15, 23, 42, 0.08);
 
   --font: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI Variable",
     "Segoe UI", "Hiragino Sans", "Yu Gothic UI", "Noto Sans CJK JP", sans-serif;
@@ -47,11 +53,12 @@
 
 /* ---------- Tokens (Dark) --------------------------------- */
 :root[data-theme="dark"] {
-  --bg: #0a0a0b;
-  --bg-soft: #0f1011;
-  --bg-elev: #141517;
-  --bg-hover: #1c1d20;
-  --bg-active: #26282c;
+  --bg: #080a09;
+  --bg-soft: #101411;
+  --bg-quiet: #151b16;
+  --bg-elev: #151915;
+  --bg-hover: #1d251f;
+  --bg-active: #273128;
 
   --fg: #fafafa;
   --fg-muted: #9ca3af;
@@ -63,6 +70,11 @@
   --accent: #22c55e;
   --accent-hover: #16a34a;
   --accent-fg: #0a0a0b;
+  --accent-2: #2dd4bf;
+  --accent-3: #f59e0b;
+  --accent-soft: rgba(34, 197, 94, 0.14);
+  --accent-2-soft: rgba(45, 212, 191, 0.13);
+  --accent-3-soft: rgba(245, 158, 11, 0.14);
 
   --cell-0: #20242b;
   --cell-1: #0e4429;
@@ -78,11 +90,12 @@
 
 @media (prefers-color-scheme: dark) {
   :root[data-theme="auto"] {
-    --bg: #0a0a0b;
-    --bg-soft: #0f1011;
-    --bg-elev: #141517;
-    --bg-hover: #1c1d20;
-    --bg-active: #26282c;
+    --bg: #080a09;
+    --bg-soft: #101411;
+    --bg-quiet: #151b16;
+    --bg-elev: #151915;
+    --bg-hover: #1d251f;
+    --bg-active: #273128;
 
     --fg: #fafafa;
     --fg-muted: #9ca3af;
@@ -94,6 +107,11 @@
     --accent: #22c55e;
     --accent-hover: #16a34a;
     --accent-fg: #0a0a0b;
+    --accent-2: #2dd4bf;
+    --accent-3: #f59e0b;
+    --accent-soft: rgba(34, 197, 94, 0.14);
+    --accent-2-soft: rgba(45, 212, 191, 0.13);
+    --accent-3-soft: rgba(245, 158, 11, 0.14);
 
     --cell-0: #20242b;
     --cell-1: #0e4429;
@@ -120,7 +138,9 @@ body {
   margin: 0;
   padding: 0;
   height: 100%;
-  background: var(--bg);
+  background:
+    radial-gradient(900px 460px at 82% -12%, var(--accent-2-soft), transparent 58%),
+    linear-gradient(180deg, var(--bg-elev) 0%, var(--bg) 42%, var(--bg-soft) 100%);
   color: var(--fg);
   font-family: var(--font);
   font-size: 14px;
@@ -164,7 +184,9 @@ hr {
   flex-direction: column;
   min-height: 100vh;
   padding: 18px 24px 14px;
-  background: var(--bg);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.72), transparent 34%),
+    var(--bg);
 }
 
 /* ---------- Header --------------------------------------- */
@@ -188,6 +210,7 @@ hr {
   border-radius: 50%;
   background: var(--accent);
   flex: none;
+  box-shadow: 0 0 0 5px var(--accent-soft);
 }
 
 .brand-name {
@@ -244,9 +267,11 @@ hr {
    その中で「アクティブだけが白く浮き上がる」コントラストに集中させる。 */
 .seg {
   display: inline-flex;
-  background: var(--bg-soft);
+  background: color-mix(in srgb, var(--bg-soft) 78%, var(--bg-elev));
+  border: 1px solid color-mix(in srgb, var(--border) 76%, transparent);
   border-radius: 999px;
-  padding: 2px;
+  padding: 3px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.52);
 }
 
 /* セグメントボタン (タブ): グレースケールの 3 段階で状態を表現。
@@ -263,7 +288,7 @@ hr {
   font-size: 12.5px;
   font-weight: 500;
   color: var(--fg-faint);
-  transition: background 140ms cubic-bezier(.22, 1, .36, 1),
+  transition: background 130ms cubic-bezier(.22, 1, .36, 1),
               color 140ms ease,
               box-shadow 140ms ease,
               transform 140ms ease;
@@ -283,12 +308,13 @@ hr {
 
 .seg-btn.is-active,
 .seg-btn[aria-checked="true"] {
-  background: var(--bg-elev);
+  background:
+    linear-gradient(180deg, var(--bg-elev), color-mix(in srgb, var(--bg-elev) 72%, var(--bg-soft)));
   color: var(--fg-strong, var(--fg));
   font-weight: 600;
   box-shadow:
     0 1px 2px rgba(0, 0, 0, 0.06),
-    0 4px 12px rgba(0, 0, 0, 0.04);
+    0 7px 18px rgba(15, 23, 42, 0.08);
 }
 
 .seg-btn.is-active svg,
@@ -319,7 +345,7 @@ hr {
   justify-content: center;
   border-radius: var(--radius-md);
   color: var(--fg-muted);
-  transition: background 120ms ease, color 120ms ease;
+  transition: background 80ms ease, color 80ms ease, border-color 80ms ease;
 }
 
 .icon-btn:hover {
@@ -330,8 +356,9 @@ hr {
 /* 一部のアイコンボタンはトグル状態を持つ (例: リアルタイム表示)。
    ON のときはアクセントカラーで明示する。 */
 .icon-btn.is-active {
-  background: color-mix(in srgb, var(--accent) 16%, transparent);
+  background: var(--accent-soft);
   color: var(--accent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 28%, transparent);
 }
 
 .icon-btn.is-active:hover {
@@ -378,7 +405,7 @@ hr {
 .stats {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 24px;
+  gap: 14px;
   padding: 2px 0 6px;
 }
 
@@ -386,7 +413,19 @@ hr {
   display: flex;
   flex-direction: column;
   gap: 8px;
+  padding: 16px 18px 18px;
+  border-radius: var(--radius-md);
+  background:
+    linear-gradient(135deg, var(--accent-soft), transparent 48%),
+    var(--bg-elev);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--border) 78%, transparent);
   min-width: 0;
+}
+
+.stat:nth-child(2) {
+  background:
+    linear-gradient(135deg, var(--accent-2-soft), transparent 48%),
+    var(--bg-elev);
 }
 
 .stat-label {
@@ -433,7 +472,8 @@ hr {
 }
 
 .divider {
-  margin: 2px 0 0;
+  margin: 0;
+  border-top-color: color-mix(in srgb, var(--border) 62%, transparent);
 }
 
 /* =========================================================
@@ -696,7 +736,12 @@ hr {
   flex-direction: column;
   gap: 4px;
   padding: 12px 16px;
-  background: var(--bg-soft);
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--bg-elev) 86%, transparent), var(--bg-soft)),
+    var(--bg-soft);
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--border) 76%, transparent),
+    0 8px 24px rgba(15, 23, 42, 0.035);
   border-radius: var(--radius-md);
   min-width: 0;
 }
@@ -780,9 +825,18 @@ hr {
   flex-direction: column;
   gap: 8px;
   padding: 14px 18px 16px;
-  background: var(--bg-soft);
+  background:
+    linear-gradient(135deg, var(--accent-2-soft), transparent 42%),
+    var(--bg-elev);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--border) 74%, transparent);
   border-radius: var(--radius-md);
   min-width: 0;
+}
+
+.trip-card:nth-child(2) {
+  background:
+    linear-gradient(135deg, var(--accent-3-soft), transparent 42%),
+    var(--bg-elev);
 }
 
 .trip-head {
@@ -858,7 +912,7 @@ hr {
 .trip-fill {
   height: 100%;
   width: 0;
-  background: var(--accent);
+  background: linear-gradient(90deg, var(--accent-2), var(--accent));
   border-radius: inherit;
   transition: width 700ms cubic-bezier(.22, 1, .36, 1);
 }
@@ -885,7 +939,10 @@ hr {
   flex-direction: column;
   gap: 14px;
   padding: 16px 18px 18px;
-  background: var(--bg-soft);
+  background: var(--bg-elev);
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--border) 78%, transparent),
+    0 12px 30px rgba(15, 23, 42, 0.035);
   border-radius: var(--radius-md);
   min-width: 0;
 }
@@ -921,49 +978,81 @@ hr {
   color: var(--fg-faint);
 }
 
-/* ---------- Hour heatmap (24 × 1) -------------------------
-   選択スコープ (今日 / 7日 / 今月 / 全期間) で絞った全日を時間帯ごとに
-   合算した値を、1 行 24 セルで表示する。曜日軸は廃止。 */
+/* ---------- Hour rhythm chart -----------------------------
+   よくある 24 セルのヒートマップではなく、時間帯ごとの山を見せる
+   小さな縦棒チャート。ピーク帯が一目で分かるようにする。 */
 .hour-heatmap {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
+  min-width: 0;
   font-variant-numeric: tabular-nums;
 }
 
-.hour-heatmap .hh-hours {
+.hour-heatmap .hh-chart {
   display: grid;
   grid-template-columns: repeat(24, 1fr);
-  font-size: 10px;
-  color: var(--fg-faint);
-  letter-spacing: 0.02em;
-}
-
-.hour-heatmap .hh-hour-cell {
-  text-align: left;
-  padding-left: 1px;
-}
-
-.hour-heatmap .hh-grid {
-  display: grid;
-  grid-template-columns: repeat(24, 1fr);
-  gap: 3px;
+  gap: 5px;
+  align-items: end;
+  min-height: 104px;
+  padding: 10px 4px 0;
+  border-radius: var(--radius-md);
+  background:
+    linear-gradient(to top, color-mix(in srgb, var(--border) 52%, transparent) 1px, transparent 1px) 0 0 / 100% 25%,
+    linear-gradient(180deg, var(--bg-soft), transparent);
 }
 
 .hour-heatmap .hh-cell {
-  height: 22px;
-  background: var(--cell-0);
-  border-radius: 3px;
+  height: 96px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  align-items: stretch;
+  gap: 6px;
+  background: transparent;
+  border: 0;
+  padding: 0;
+  color: var(--fg-faint);
+  cursor: default;
 }
 
-.hour-heatmap .hh-cell[data-level="1"] { background: var(--cell-1); }
-.hour-heatmap .hh-cell[data-level="2"] { background: var(--cell-2); }
-.hour-heatmap .hh-cell[data-level="3"] { background: var(--cell-3); }
-.hour-heatmap .hh-cell[data-level="4"] { background: var(--cell-4); }
+.hour-heatmap .hh-bar {
+  display: block;
+  width: 100%;
+  height: var(--h);
+  min-height: 3px;
+  border-radius: 999px 999px 3px 3px;
+  background:
+    linear-gradient(180deg, var(--accent), var(--accent-2));
+  box-shadow: 0 4px 12px var(--accent-soft);
+  transform-origin: bottom;
+  animation: hour-rise 420ms cubic-bezier(.22, 1, .36, 1) both;
+  animation-delay: var(--delay);
+}
+
+.hour-heatmap .hh-chart[data-empty="true"] .hh-bar {
+  background: var(--cell-0);
+  box-shadow: none;
+  opacity: 0.55;
+}
+
+.hour-heatmap .hh-label {
+  height: 12px;
+  font-size: 9.5px;
+  line-height: 12px;
+  text-align: center;
+  color: var(--fg-faint);
+}
 
 .hour-heatmap .hh-cell:hover {
-  outline: 1px solid var(--fg-muted);
-  outline-offset: -1px;
+  color: var(--fg-muted);
+}
+
+.hour-heatmap .hh-cell:hover .hh-bar {
+  filter: brightness(1.08);
+}
+
+@keyframes hour-rise {
+  from { transform: scaleY(0.08); opacity: 0.35; }
+  to   { transform: scaleY(1); opacity: 1; }
 }
 
 /* ---------- Breakdown bars -------------------------------- */
@@ -989,11 +1078,12 @@ hr {
 
 .br-row {
   display: grid;
-  grid-template-columns: 64px 1fr 64px;
+  grid-template-columns: 72px 1fr 64px;
   align-items: center;
   gap: 8px;
   font-size: 12px;
   font-variant-numeric: tabular-nums;
+  padding: 2px 0;
 }
 
 .br-label {
@@ -1005,8 +1095,8 @@ hr {
 
 .br-track {
   display: block;
-  height: 10px;
-  background: var(--bg-soft);
+  height: 8px;
+  background: var(--bg-quiet);
   border-radius: 999px;
   overflow: hidden;
   position: relative;
@@ -1015,8 +1105,14 @@ hr {
 .br-fill {
   display: block;
   height: 100%;
-  background: var(--accent);
+  background: linear-gradient(90deg, var(--accent), var(--accent-2));
   border-radius: inherit;
+  animation: bar-grow 360ms cubic-bezier(.22, 1, .36, 1) both;
+}
+
+@keyframes bar-grow {
+  from { transform: scaleX(0.04); transform-origin: left; opacity: 0.45; }
+  to   { transform: scaleX(1); transform-origin: left; opacity: 1; }
 }
 
 .br-num {
@@ -1037,18 +1133,32 @@ hr {
   display: none !important;
 }
 
-/* タブ切替時に新しいビューがふわっと現れる小さな演出。
-   約 180ms とごく短く、画面遷移の唐突感だけを和らげる。 */
-@keyframes view-fade-in {
-  from { opacity: 0; transform: translateY(4px); }
-  to   { opacity: 1; transform: translateY(0); }
+/* タブ切替時に新しいビューが方向を持って入る短い演出。
+   スライド量は小さく、操作の軽さを邪魔しない。 */
+@keyframes view-fade-in-forward {
+  from { opacity: 0; transform: translateX(10px); filter: blur(1px); }
+  to   { opacity: 1; transform: translateX(0); filter: blur(0); }
 }
+
+@keyframes view-fade-in-back {
+  from { opacity: 0; transform: translateX(-10px); filter: blur(1px); }
+  to   { opacity: 1; transform: translateX(0); filter: blur(0); }
+}
+
 .view.is-entering {
-  animation: view-fade-in 180ms cubic-bezier(.22, 1, .36, 1);
+  animation: view-fade-in-forward 190ms cubic-bezier(.22, 1, .36, 1);
+}
+
+.view.is-entering.is-back {
+  animation-name: view-fade-in-back;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .view.is-entering { animation: none; }
+  .view.is-entering,
+  .hour-heatmap .hh-bar,
+  .br-fill {
+    animation: none;
+  }
 }
 
 .list-head {
