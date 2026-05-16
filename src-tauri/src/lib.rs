@@ -259,13 +259,8 @@ pub fn run() {
             thread::Builder::new()
                 .name("clack-rdev".into())
                 .spawn(move || {
+                    macos_permissions::request_input_monitoring();
                     loop {
-                        if !macos_permissions::has_input_monitoring() {
-                            macos_permissions::request_input_monitoring();
-                            thread::sleep(INPUT_RETRY_INTERVAL);
-                            continue;
-                        }
-
                         let state_input = Arc::clone(&state_input_outer);
                         let handle_input = handle_input_outer.clone();
                         if let Err(e) = rdev::listen(move |event| {

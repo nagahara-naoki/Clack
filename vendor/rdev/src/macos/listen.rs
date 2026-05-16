@@ -32,6 +32,17 @@ unsafe extern "C" fn raw_callback(
     cg_event
 }
 
+unsafe fn create_event_tap(location: CGEventTapLocation) -> CFMachPortRef {
+    CGEventTapCreate(
+        location,
+        kCGHeadInsertEventTap,
+        CGEventTapOption::ListenOnly,
+        kCGEventMaskForAllEvents,
+        raw_callback,
+        nil,
+    )
+}
+
 pub fn listen<T>(callback: T) -> Result<(), ListenError>
 where
     T: FnMut(Event) + 'static,
@@ -39,19 +50,14 @@ where
     unsafe {
         GLOBAL_CALLBACK = Some(Box::new(callback));
         let _pool = NSAutoreleasePool::new(nil);
-        let tap = CGEventTapCreate(
-            // Use a HID-level listen-only tap for background recording. Session
-            // taps can miss keyboard events when the app has no visible/focused
-            // window on newer macOS releases. Clack no longer asks HIToolbox for
-            // localized key names in the tap callback, so the earlier main-queue
-            // crash risk is avoided while keeping global keyboard delivery.
-            CGEventTapLocation::HID, // HID, Session, AnnotatedSession,
-            kCGHeadInsertEventTap,
-            CGEventTapOption::ListenOnly,
-            kCGEventMaskForAllEvents,
-            raw_callback,
-            nil,
-        );
+        // Prefer HID-level delivery for background keyboard counting. If macOS
+        // refuses that tap (for example while TCC is still settling after a new
+        // unsigned build), fall back to a session tap so mouse events and focused
+        // app input keep working instead of disabling all counting.
+        let mut tap = create_event_tap(CGEventTapLocation::HID);
+        if tap.is_null() {
+            tap = create_event_tap(CGEventTapLocation::Session);
+        }
         if tap.is_null() {
             return Err(ListenError::EventTapError);
         }
