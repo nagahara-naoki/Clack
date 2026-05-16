@@ -57,7 +57,6 @@ time = { version = "0.3.47", features = ["formatting", "local-offset", "macros"]
 
 [target.'cfg(target_os = "macos")'.dependencies]
 objc2-core-graphics = "0.3.2"
-macos-accessibility-client = "0.0.2"
 
 [profile.release]
 opt-level = "z"

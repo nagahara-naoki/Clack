@@ -128,7 +128,7 @@ Clack records the number of keyboard and mouse interactions **per day** and visu
 
 > **🟡 macOS: Gatekeeper warning + Input Monitoring permission**
 > Because the app is not Developer ID signed / notarized yet, macOS may show "Apple could not verify that this app is free of malware". First drag `Clack.app` into Applications and try **Right-click → Open**. If the dialog only shows Done, open System Settings → **Privacy & Security**, click **Open Anyway** for Clack near the bottom, then launch it again.
-> Then open System Settings → **Privacy & Security → Input Monitoring** and **Accessibility**, and enable Clack in both places. On macOS, global keyboard monitoring may require both.
+> Then open System Settings → **Privacy & Security → Input Monitoring** and enable Clack. Global keyboard monitoring requires this permission.
 
 ### macOS installation steps (detailed)
 
@@ -138,8 +138,7 @@ Clack records the number of keyboard and mouse interactions **per day** and visu
 4. Open System Settings → Privacy & Security, then click **Open Anyway** for Clack near the bottom.
 5. Launch `Clack.app` again.
 6. System Settings → Privacy & Security → Input Monitoring → enable Clack.
-7. If needed, also enable Clack under Accessibility.
-8. Restart the app. Done.
+7. Restart the app. Done.
 
 If it still does not open, remove the quarantine attribute from Terminal:
 
@@ -148,15 +147,14 @@ xattr -dr com.apple.quarantine /Applications/Clack.app
 open /Applications/Clack.app
 ```
 
-If the permission prompt appears on every launch, or mouse clicks are counted but keyboard input is not, macOS may still have a stale permission record for an older Clack build. Quit Clack, remove Clack from Input Monitoring and Accessibility in System Settings, then reset the permission records:
+If mouse clicks are counted but keyboard input is not, macOS may still have a stale permission record for an older Clack build. Quit Clack, remove Clack from Input Monitoring in System Settings, then reset the permission record:
 
 ```bash
-tccutil reset Accessibility com.clack.desktop
 tccutil reset ListenEvent com.clack.desktop
 open /Applications/Clack.app
 ```
 
-After launch, enable Clack again under both Input Monitoring and Accessibility, then restart the app.
+After launch, enable Clack again under Input Monitoring, then restart the app.
 
 ---
 
