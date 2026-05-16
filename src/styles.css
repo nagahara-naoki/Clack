@@ -5,12 +5,12 @@
 
 /* ---------- Tokens (Light, default) ----------------------- */
 :root {
-  --bg: #fbfcfb;
-  --bg-soft: #f3f6f3;
-  --bg-quiet: #eef3ef;
+  --bg: #ffffff;
+  --bg-soft: #f7f8f7;
+  --bg-quiet: #eef0ee;
   --bg-elev: #ffffff;
-  --bg-hover: #e9efe9;
-  --bg-active: #dde7df;
+  --bg-hover: #f0f2f0;
+  --bg-active: #e5e8e5;
 
   --fg: #111113;
   --fg-muted: #6b7280;
@@ -22,11 +22,7 @@
   --accent: #16a34a;
   --accent-hover: #15803d;
   --accent-fg: #ffffff;
-  --accent-2: #0f766e;
-  --accent-3: #b45309;
-  --accent-soft: rgba(22, 163, 74, 0.12);
-  --accent-2-soft: rgba(15, 118, 110, 0.12);
-  --accent-3-soft: rgba(180, 83, 9, 0.12);
+  --accent-soft: rgba(22, 163, 74, 0.10);
 
   /* GitHub-style green heatmap */
   --cell-0: #ebedf0;
@@ -43,7 +39,7 @@
   --radius-lg: 12px;
 
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.04);
-  --shadow-md: 0 10px 34px rgba(15, 23, 42, 0.08);
+  --shadow-md: 0 4px 14px rgba(0, 0, 0, 0.06);
 
   --font: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI Variable",
     "Segoe UI", "Hiragino Sans", "Yu Gothic UI", "Noto Sans CJK JP", sans-serif;
@@ -53,12 +49,12 @@
 
 /* ---------- Tokens (Dark) --------------------------------- */
 :root[data-theme="dark"] {
-  --bg: #080a09;
-  --bg-soft: #101411;
-  --bg-quiet: #151b16;
-  --bg-elev: #151915;
-  --bg-hover: #1d251f;
-  --bg-active: #273128;
+  --bg: #0a0a0b;
+  --bg-soft: #111214;
+  --bg-quiet: #1a1c20;
+  --bg-elev: #151619;
+  --bg-hover: #1d1f24;
+  --bg-active: #26292f;
 
   --fg: #fafafa;
   --fg-muted: #9ca3af;
@@ -70,11 +66,7 @@
   --accent: #22c55e;
   --accent-hover: #16a34a;
   --accent-fg: #0a0a0b;
-  --accent-2: #2dd4bf;
-  --accent-3: #f59e0b;
-  --accent-soft: rgba(34, 197, 94, 0.14);
-  --accent-2-soft: rgba(45, 212, 191, 0.13);
-  --accent-3-soft: rgba(245, 158, 11, 0.14);
+  --accent-soft: rgba(34, 197, 94, 0.12);
 
   --cell-0: #20242b;
   --cell-1: #0e4429;
@@ -90,12 +82,12 @@
 
 @media (prefers-color-scheme: dark) {
   :root[data-theme="auto"] {
-    --bg: #080a09;
-    --bg-soft: #101411;
-    --bg-quiet: #151b16;
-    --bg-elev: #151915;
-    --bg-hover: #1d251f;
-    --bg-active: #273128;
+    --bg: #0a0a0b;
+    --bg-soft: #111214;
+    --bg-quiet: #1a1c20;
+    --bg-elev: #151619;
+    --bg-hover: #1d1f24;
+    --bg-active: #26292f;
 
     --fg: #fafafa;
     --fg-muted: #9ca3af;
@@ -107,11 +99,7 @@
     --accent: #22c55e;
     --accent-hover: #16a34a;
     --accent-fg: #0a0a0b;
-    --accent-2: #2dd4bf;
-    --accent-3: #f59e0b;
-    --accent-soft: rgba(34, 197, 94, 0.14);
-    --accent-2-soft: rgba(45, 212, 191, 0.13);
-    --accent-3-soft: rgba(245, 158, 11, 0.14);
+    --accent-soft: rgba(34, 197, 94, 0.12);
 
     --cell-0: #20242b;
     --cell-1: #0e4429;
@@ -138,9 +126,7 @@ body {
   margin: 0;
   padding: 0;
   height: 100%;
-  background:
-    radial-gradient(900px 460px at 82% -12%, var(--accent-2-soft), transparent 58%),
-    linear-gradient(180deg, var(--bg-elev) 0%, var(--bg) 42%, var(--bg-soft) 100%);
+  background: var(--bg);
   color: var(--fg);
   font-family: var(--font);
   font-size: 14px;
@@ -258,24 +244,17 @@ hr {
 .controls {
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 3px;
-  border-radius: 999px;
-  background: color-mix(in srgb, var(--bg-elev) 84%, transparent);
-  box-shadow:
-    inset 0 0 0 1px color-mix(in srgb, var(--border) 76%, transparent),
-    0 8px 24px rgba(15, 23, 42, 0.06);
+  gap: 8px;
 }
 
 /* セグメントのコンテナ: 縁取りは撤去。背景色だけでグループを示し、
    その中で「アクティブだけが白く浮き上がる」コントラストに集中させる。 */
 .seg {
   display: inline-flex;
-  background: color-mix(in srgb, var(--bg-soft) 78%, var(--bg-elev));
-  border: 1px solid color-mix(in srgb, var(--border) 76%, transparent);
-  border-radius: 999px;
-  padding: 3px;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.52);
+  background: var(--bg-soft);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 2px;
 }
 
 /* セグメントボタン (タブ): グレースケールの 3 段階で状態を表現。
@@ -288,14 +267,13 @@ hr {
   align-items: center;
   gap: 6px;
   padding: 5px 12px;
-  border-radius: 999px;
+  border-radius: 6px;
   font-size: 12.5px;
   font-weight: 500;
   color: var(--fg-faint);
-  transition: background 130ms cubic-bezier(.22, 1, .36, 1),
+  transition: background 100ms ease,
               color 140ms ease,
-              box-shadow 140ms ease,
-              transform 140ms ease;
+              box-shadow 100ms ease;
 }
 
 .seg-btn svg {
@@ -312,13 +290,10 @@ hr {
 
 .seg-btn.is-active,
 .seg-btn[aria-checked="true"] {
-  background:
-    linear-gradient(180deg, var(--bg-elev), color-mix(in srgb, var(--bg-elev) 72%, var(--bg-soft)));
+  background: var(--bg-elev);
   color: var(--fg-strong, var(--fg));
   font-weight: 600;
-  box-shadow:
-    0 1px 2px rgba(0, 0, 0, 0.06),
-    0 7px 18px rgba(15, 23, 42, 0.08);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
 }
 
 .seg-btn.is-active svg,
@@ -341,32 +316,15 @@ hr {
   }
 }
 
-:root[data-theme="dark"] .controls {
-  background: color-mix(in srgb, var(--bg-elev) 92%, transparent);
-  box-shadow:
-    inset 0 0 0 1px color-mix(in srgb, var(--border-strong) 70%, transparent),
-    0 10px 26px rgba(0, 0, 0, 0.26);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root[data-theme="auto"] .controls {
-    background: color-mix(in srgb, var(--bg-elev) 92%, transparent);
-    box-shadow:
-      inset 0 0 0 1px color-mix(in srgb, var(--border-strong) 70%, transparent),
-      0 10px 26px rgba(0, 0, 0, 0.26);
-  }
-}
-
 .icon-btn {
-  width: 32px;
-  height: 32px;
+  width: 30px;
+  height: 30px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   border-radius: var(--radius-md);
-  color: var(--fg);
-  background: color-mix(in srgb, var(--bg-soft) 58%, transparent);
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--border) 70%, transparent);
+  color: var(--fg-muted);
+  background: transparent;
   transition: background 80ms ease, color 80ms ease, border-color 80ms ease;
 }
 
@@ -380,7 +338,7 @@ hr {
 .icon-btn.is-active {
   background: var(--accent-soft);
   color: var(--accent);
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 28%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 24%, transparent);
 }
 
 .icon-btn.is-active:hover {
@@ -436,19 +394,13 @@ hr {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  padding: 16px 18px 18px;
-  border-radius: var(--radius-md);
-  background:
-    linear-gradient(135deg, var(--accent-soft), transparent 48%),
-    var(--bg-elev);
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--border) 78%, transparent);
+  padding: 0;
+  background: transparent;
   min-width: 0;
 }
 
 .stat:nth-child(2) {
-  background:
-    linear-gradient(135deg, var(--accent-2-soft), transparent 48%),
-    var(--bg-elev);
+  background: transparent;
 }
 
 .stat-label {
@@ -759,12 +711,9 @@ hr {
   flex-direction: column;
   gap: 4px;
   padding: 12px 16px;
-  background:
-    linear-gradient(180deg, color-mix(in srgb, var(--bg-elev) 86%, transparent), var(--bg-soft)),
-    var(--bg-soft);
-  box-shadow:
-    inset 0 0 0 1px color-mix(in srgb, var(--border) 76%, transparent),
-    0 8px 24px rgba(15, 23, 42, 0.035);
+  background: var(--bg-soft);
+  border: 1px solid var(--border);
+  box-shadow: none;
   border-radius: var(--radius-md);
   min-width: 0;
 }
@@ -848,18 +797,15 @@ hr {
   flex-direction: column;
   gap: 8px;
   padding: 14px 18px 16px;
-  background:
-    linear-gradient(135deg, var(--accent-2-soft), transparent 42%),
-    var(--bg-elev);
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--border) 74%, transparent);
+  background: var(--bg-soft);
+  border: 1px solid var(--border);
+  box-shadow: none;
   border-radius: var(--radius-md);
   min-width: 0;
 }
 
 .trip-card:nth-child(2) {
-  background:
-    linear-gradient(135deg, var(--accent-3-soft), transparent 42%),
-    var(--bg-elev);
+  background: var(--bg-soft);
 }
 
 .trip-head {
@@ -935,7 +881,7 @@ hr {
 .trip-fill {
   height: 100%;
   width: 0;
-  background: linear-gradient(90deg, var(--accent-2), var(--accent));
+  background: var(--accent);
   border-radius: inherit;
   transition: width 700ms cubic-bezier(.22, 1, .36, 1);
 }
@@ -963,9 +909,8 @@ hr {
   gap: 14px;
   padding: 16px 18px 18px;
   background: var(--bg-elev);
-  box-shadow:
-    inset 0 0 0 1px color-mix(in srgb, var(--border) 78%, transparent),
-    0 12px 30px rgba(15, 23, 42, 0.035);
+  border: 1px solid var(--border);
+  box-shadow: none;
   border-radius: var(--radius-md);
   min-width: 0;
 }
@@ -1017,9 +962,8 @@ hr {
   min-height: 104px;
   padding: 10px 4px 0;
   border-radius: var(--radius-md);
-  background:
-    linear-gradient(to top, color-mix(in srgb, var(--border) 52%, transparent) 1px, transparent 1px) 0 0 / 100% 25%,
-    linear-gradient(180deg, var(--bg-soft), transparent);
+  background: var(--bg-soft);
+  border: 1px solid var(--border);
 }
 
 .hour-heatmap .hh-cell {
@@ -1043,9 +987,8 @@ hr {
   height: var(--h);
   min-height: 3px;
   border-radius: 999px 999px 3px 3px;
-  background:
-    linear-gradient(180deg, var(--accent), var(--accent-2));
-  box-shadow: 0 4px 12px var(--accent-soft);
+  background: var(--accent);
+  box-shadow: none;
   transform-origin: bottom;
   animation: hour-rise 420ms cubic-bezier(.22, 1, .36, 1) both;
   animation-delay: var(--delay);
@@ -1128,7 +1071,7 @@ hr {
 .br-fill {
   display: block;
   height: 100%;
-  background: linear-gradient(90deg, var(--accent), var(--accent-2));
+  background: var(--accent);
   border-radius: inherit;
   animation: bar-grow 360ms cubic-bezier(.22, 1, .36, 1) both;
 }
