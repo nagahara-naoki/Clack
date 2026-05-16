@@ -184,9 +184,7 @@ hr {
   flex-direction: column;
   min-height: 100vh;
   padding: 18px 24px 14px;
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.72), transparent 34%),
-    var(--bg);
+  background: transparent;
 }
 
 /* ---------- Header --------------------------------------- */
@@ -260,7 +258,13 @@ hr {
 .controls {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 6px;
+  padding: 3px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--bg-elev) 84%, transparent);
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--border) 76%, transparent),
+    0 8px 24px rgba(15, 23, 42, 0.06);
 }
 
 /* セグメントのコンテナ: 縁取りは撤去。背景色だけでグループを示し、
@@ -337,14 +341,32 @@ hr {
   }
 }
 
+:root[data-theme="dark"] .controls {
+  background: color-mix(in srgb, var(--bg-elev) 92%, transparent);
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--border-strong) 70%, transparent),
+    0 10px 26px rgba(0, 0, 0, 0.26);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root[data-theme="auto"] .controls {
+    background: color-mix(in srgb, var(--bg-elev) 92%, transparent);
+    box-shadow:
+      inset 0 0 0 1px color-mix(in srgb, var(--border-strong) 70%, transparent),
+      0 10px 26px rgba(0, 0, 0, 0.26);
+  }
+}
+
 .icon-btn {
-  width: 30px;
-  height: 30px;
+  width: 32px;
+  height: 32px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   border-radius: var(--radius-md);
-  color: var(--fg-muted);
+  color: var(--fg);
+  background: color-mix(in srgb, var(--bg-soft) 58%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--border) 70%, transparent);
   transition: background 80ms ease, color 80ms ease, border-color 80ms ease;
 }
 
@@ -368,6 +390,7 @@ hr {
 .icon-btn svg {
   width: 17px;
   height: 17px;
+  opacity: 0.92;
 }
 
 /* =========================================================
