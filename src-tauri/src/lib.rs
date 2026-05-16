@@ -71,6 +71,7 @@ const LEGACY_APP_DIR_NAME: &str = "ClickCounter";
 const ROLLOVER_CHECK_INTERVAL: Duration = Duration::from_secs(30);
 const FLUSH_INTERVAL: Duration = Duration::from_secs(10);
 const EMIT_INTERVAL: Duration = Duration::from_millis(1000);
+const INPUT_RETRY_INTERVAL: Duration = Duration::from_secs(3);
 
 /// アプリを本当に終了してよいかを表すフラグ。
 ///
@@ -253,29 +254,40 @@ pub fn run() {
             // `handle_event` 自体は構造的に panic フリー。ロックが
             // ポイズンしていても `into_inner` でリカバリし、計数の
             // 継続性を最優先する。
-            let state_input = Arc::clone(&state_arc);
-            let handle_input = app_handle.clone();
+            let state_input_outer = Arc::clone(&state_arc);
+            let handle_input_outer = app_handle.clone();
             thread::Builder::new()
                 .name("clack-rdev".into())
                 .spawn(move || {
-                    if let Err(e) = rdev::listen(move |event| {
-                        // ロック保持中に IPC emit を呼ばないこと。
-                        // ロック解放後にライブイベントを送ることで、
-                        // emit のレイテンシが入力ホットパスを止めないようにする。
-                        let (live_event, live_on) = {
-                            let mut s = state_input
-                                .lock()
-                                .unwrap_or_else(|poison| poison.into_inner());
-                            let ev = s.handle_event(event);
-                            (ev, s.live_display)
-                        };
-                        if live_on {
-                            if let Some(payload) = live_event {
-                                let _ = handle_input.emit_to("live", "live-key", payload);
-                            }
+                    loop {
+                        if !macos_permissions::has_input_monitoring() {
+                            macos_permissions::request_input_monitoring();
+                            thread::sleep(INPUT_RETRY_INTERVAL);
+                            continue;
                         }
-                    }) {
-                        eprintln!("global input hook failed: {e:?}");
+
+                        let state_input = Arc::clone(&state_input_outer);
+                        let handle_input = handle_input_outer.clone();
+                        if let Err(e) = rdev::listen(move |event| {
+                            // ロック保持中に IPC emit を呼ばないこと。
+                            // ロック解放後にライブイベントを送ることで、
+                            // emit のレイテンシが入力ホットパスを止めないようにする。
+                            let (live_event, live_on) = {
+                                let mut s = state_input
+                                    .lock()
+                                    .unwrap_or_else(|poison| poison.into_inner());
+                                let ev = s.handle_event(event);
+                                (ev, s.live_display)
+                            };
+                            if live_on {
+                                if let Some(payload) = live_event {
+                                    let _ = handle_input.emit_to("live", "live-key", payload);
+                                }
+                            }
+                        }) {
+                            eprintln!("global input hook failed: {e:?}; retrying");
+                            thread::sleep(INPUT_RETRY_INTERVAL);
+                        }
                     }
                 })
                 .expect("spawn rdev listener");

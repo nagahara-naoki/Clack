@@ -40,7 +40,12 @@ where
         GLOBAL_CALLBACK = Some(Box::new(callback));
         let _pool = NSAutoreleasePool::new(nil);
         let tap = CGEventTapCreate(
-            CGEventTapLocation::Session, // HID, Session, AnnotatedSession,
+            // Use a HID-level listen-only tap for background recording. Session
+            // taps can miss keyboard events when the app has no visible/focused
+            // window on newer macOS releases. Clack no longer asks HIToolbox for
+            // localized key names in the tap callback, so the earlier main-queue
+            // crash risk is avoided while keeping global keyboard delivery.
+            CGEventTapLocation::HID, // HID, Session, AnnotatedSession,
             kCGHeadInsertEventTap,
             CGEventTapOption::ListenOnly,
             kCGEventMaskForAllEvents,
