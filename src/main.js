@@ -161,17 +161,6 @@
     return `${num} ${unit}`;
   }
 
-  /** ms を「N 時間 N 分 / N 分 / N 秒」に整形 (TOP のアクティブ時間用)。 */
-  function fmtDuration(ms) {
-    const totalSec = Math.max(0, Math.floor((Number(ms) || 0) / 1000));
-    const h = Math.floor(totalSec / 3600);
-    const m = Math.floor((totalSec % 3600) / 60);
-    const s = totalSec % 60;
-    if (h > 0) return L().duration_hm(h, m);
-    if (m > 0) return L().duration_m(m);
-    return L().duration_s(s);
-  }
-
   /** rdev のキー識別子 → 表示ラベル。
    *  全件は網羅しないが、よく使われるものは短く読みやすくする。
    *  未登録のキーは raw 文字列にフォールバック。 */
@@ -245,7 +234,6 @@
       anal_mouse_sub: "ボタン別の内訳",
       kpi_average: "1日平均",
       kpi_average_unit: "操作",
-      kpi_active: "アクティブ時間",
       hourTooltip: (hour, val) =>
         `${hour}:00–${hour}:59 ・ ${val}`,
       noAnalytics: "まだデータがありません",
@@ -263,9 +251,6 @@
       today_active: "アクティブ",
       today_scroll: "スクロール",
       today_moved: "移動",
-      duration_hm: (h, m) => `${h}時間 ${m}分`,
-      duration_m: (m) => `${m}分`,
-      duration_s: (s) => `${s}秒`,
       // ヒートマップ左軸 (空文字は非表示)。インデックスは曜日 0=日..6=土。
       dowAxis: ["", "月", "", "水", "", "金", ""],
       months: ["1月","2月","3月","4月","5月","6月","7月","8月","9月","10月","11月","12月"],
@@ -304,7 +289,6 @@
       anal_mouse_sub: "Per-button breakdown",
       kpi_average: "Daily avg",
       kpi_average_unit: "events",
-      kpi_active: "Active time",
       hourTooltip: (hour, val) =>
         `${hour}:00–${hour}:59 · ${val}`,
       noAnalytics: "No data yet",
@@ -322,9 +306,6 @@
       today_active: "Active",
       today_scroll: "Scroll",
       today_moved: "Moved",
-      duration_hm: (h, m) => `${h}h ${m}m`,
-      duration_m: (m) => `${m}m`,
-      duration_s: (s) => `${s}s`,
       dowAxis: ["", "mon", "", "wed", "", "fri", ""],
       months: MONTHS_EN,
       dateLabel: (d) => `${MONTHS_EN[d.getMonth()]} ${d.getDate()} (${DOW_EN[d.getDay()]})`,
@@ -587,6 +568,22 @@
     return { cellW, cellH };
   }
 
+  function measureCalendarWidth(calGrid) {
+    const candidates = [
+      calGrid && calGrid.parentElement,
+      $("view-cal"),
+      document.querySelector(".card"),
+      document.body,
+    ];
+    for (const el of candidates) {
+      if (!el) continue;
+      const rect = el.getBoundingClientRect();
+      const width = Math.floor(rect.width || el.clientWidth || 0);
+      if (width >= 120) return width;
+    }
+    return Math.max(320, window.innerWidth - 48);
+  }
+
   /** 1 日の合計値からカラーレベル (0..4) を決定。 */
   function chooseLevel(total) {
     if (total <= LEVEL_THRESHOLDS[0]) return 0;
@@ -626,10 +623,7 @@
 
     // セルサイズを実際のレイアウト幅から算出して CSS 変数に反映。
     const calGrid = grid.closest(".cal-grid") || grid.parentNode;
-    const availableW = calGrid ? calGrid.clientWidth : 0;
-    if (availableW < 120) {
-      return false;
-    }
+    const availableW = measureCalendarWidth(calGrid);
     const { cellW, cellH } = computeCellSize(totalWeeks, availableW);
     calGrid.style.setProperty("--cell-w", `${cellW}px`);
     calGrid.style.setProperty("--cell-h", `${cellH}px`);
@@ -873,23 +867,26 @@
 
     // ---- KPI
     $("kpi-average-num").textContent = fmtNum(data.averagePerDay);
-    $("kpi-active-time").textContent = fmtDuration(data.activeMs);
 
     // ---- 旅 (マウス移動距離 + スクロール累計の換算)
     renderTrip({
+      kind: "mouse",
       meters: safeInt(data.mouseDistancePx) / PX_PER_METER,
       landmarks: MOUSE_LANDMARKS,
       numEl: $("trip-mouse-num"),
       unitEl: $("trip-mouse-unit"),
-      fillEl: $("trip-mouse-fill"),
+      ringEl: $("trip-mouse-ring"),
+      goalEl: $("trip-mouse-goal"),
       cmpEl: $("trip-mouse-cmp"),
     });
     renderTrip({
+      kind: "scroll",
       meters: safeInt(data.scrollYTicks) * M_PER_SCROLL_TICK,
       landmarks: SCROLL_LANDMARKS,
       numEl: $("trip-scroll-num"),
       unitEl: $("trip-scroll-unit"),
-      fillEl: $("trip-scroll-fill"),
+      ringEl: $("trip-scroll-ring"),
+      goalEl: $("trip-scroll-goal"),
       cmpEl: $("trip-scroll-cmp"),
     });
 
@@ -920,13 +917,98 @@
     }
   }
 
-  /** 「旅」カード 1 枚を描画。
-   *  - meters: 換算済みの距離 (m)
-   *  - landmarks: 比較に使う昇順リスト
-   *  - 各 DOM 要素: 数字 / 単位 / バーの fill / 比較テキスト
-   *  バーは前回描画値から新しい値へ CSS transition で滑らかに伸縮する。 */
-  function renderTrip({ meters, landmarks, numEl, unitEl, fillEl, cmpEl }) {
-    if (!numEl || !unitEl || !fillEl || !cmpEl) return;
+  function svgEl(name, attrs = {}) {
+    const el = document.createElementNS("http://www.w3.org/2000/svg", name);
+    for (const [k, v] of Object.entries(attrs)) {
+      el.setAttribute(k, String(v));
+    }
+    return el;
+  }
+
+  function appendPath(svg, d, attrs = {}) {
+    svg.appendChild(svgEl("path", {
+      d,
+      fill: "none",
+      stroke: "currentColor",
+      "stroke-width": "5",
+      "stroke-linecap": "round",
+      "stroke-linejoin": "round",
+      ...attrs,
+    }));
+  }
+
+  function createGoalSvg(kind, name) {
+    const svg = svgEl("svg", {
+      viewBox: "0 0 96 96",
+      role: "img",
+      "aria-label": name || "goal",
+    });
+    const label = String(name || "");
+    const addCircle = (cx, cy, r, attrs = {}) => {
+      svg.appendChild(svgEl("circle", {
+        cx, cy, r,
+        fill: "none",
+        stroke: "currentColor",
+        "stroke-width": "5",
+        ...attrs,
+      }));
+    };
+
+    if (label.includes("地球") || label.includes("月") || label.includes("宇宙") || label.includes("ISS") || label.includes("軌道")) {
+      addCircle(48, 48, label.includes("月") ? 24 : 30);
+      appendPath(svg, "M20 50c14-8 39-8 56 2");
+      appendPath(svg, "M48 18c-9 13-9 47 0 60");
+      appendPath(svg, "M22 36c12 6 38 6 52 0");
+      return svg;
+    }
+    if (label.includes("山") || label.includes("エベレスト") || label.includes("富士")) {
+      appendPath(svg, "M14 74 38 28l16 28 10-16 18 34H14Z");
+      appendPath(svg, "M38 28l8 16 8-10");
+      return svg;
+    }
+    if (label.includes("タワー") || label.includes("ツリー") || label.includes("ブルジュ") || label.includes("斜塔") || label.includes("女神")) {
+      appendPath(svg, "M48 16 30 78h36L48 16Z");
+      appendPath(svg, "M36 42h24M32 58h32M42 78V58M54 78V58");
+      return svg;
+    }
+    if (label.includes("マラソン") || label.includes("100m")) {
+      addCircle(48, 24, 7);
+      appendPath(svg, "M44 34 36 50l16 10 12 18");
+      appendPath(svg, "M43 50 28 74M52 44l18 6");
+      return svg;
+    }
+    if (label.includes("電車")) {
+      appendPath(svg, "M22 28h52v34H22V28Z");
+      appendPath(svg, "M32 62l-8 12M64 62l8 12M32 40h32M34 74h28");
+      return svg;
+    }
+    if (label.includes("大阪") || label.includes("福岡") || label.includes("札幌") || label.includes("那覇") || label.includes("熱海")) {
+      appendPath(svg, "M18 74h60");
+      appendPath(svg, "M26 74V38h14v36M46 74V24h18v50M68 74V48h10v26");
+      return svg;
+    }
+    if (label.includes("ジェット") || label.includes("成層圏")) {
+      appendPath(svg, "M18 58 80 30 58 74 48 56 18 58Z");
+      appendPath(svg, "M48 56 80 30");
+      return svg;
+    }
+    if (label.includes("電柱") || label.includes("ビル")) {
+      appendPath(svg, "M28 76V24h34v52M36 36h18M36 48h18M36 60h18");
+      return svg;
+    }
+    if (kind === "scroll") {
+      appendPath(svg, "M20 72h56M28 72 48 28l20 44M40 52h16");
+      return svg;
+    }
+    appendPath(svg, "M20 66c20-24 36-24 56 0");
+    appendPath(svg, "M22 66h52");
+    addCircle(48, 34, 6);
+    return svg;
+  }
+
+  /** 「旅」カード 1 枚をドーナツチャートとして描画する。 */
+  function renderTrip({ kind, meters, landmarks, numEl, unitEl, ringEl, goalEl, cmpEl }) {
+    if (!numEl || !unitEl || !ringEl || !goalEl || !cmpEl) return;
     const m = Math.max(0, Number(meters) || 0);
     const { num, unit } = fmtTripDistance(m);
     numEl.textContent = num;
@@ -934,12 +1016,14 @@
 
     const lm = findLandmark(m, landmarks);
     if (!lm) {
-      fillEl.style.width = "0%";
+      ringEl.style.strokeDasharray = "0 100";
+      goalEl.replaceChildren(createGoalSvg(kind, ""));
       cmpEl.textContent = L().trip_zero;
       return;
     }
+    goalEl.replaceChildren(createGoalSvg(kind, lm.lm.name));
     if (lm.exceeded) {
-      fillEl.style.width = "100%";
+      ringEl.style.strokeDasharray = "100 100";
       const mult = lm.multiple;
       if (mult >= 1.5) {
         cmpEl.textContent = L().trip_far_beyond(lm.lm.name, mult.toFixed(1));
@@ -948,7 +1032,8 @@
       }
       return;
     }
-    fillEl.style.width = `${Math.min(100, Math.max(1, lm.pct)).toFixed(2)}%`;
+    const pct = Math.min(100, Math.max(0, lm.pct));
+    ringEl.style.strokeDasharray = `${pct.toFixed(2)} 100`;
     cmpEl.textContent = L().trip_to(lm.lm.name, lm.pct.toFixed(1));
   }
 

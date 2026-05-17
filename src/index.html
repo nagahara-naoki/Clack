@@ -138,18 +138,6 @@
               </div>
               <div class="kpi-value"><b id="kpi-average-num">0</b><span class="kpi-unit" data-i18n="kpi_average_unit">操作</span></div>
             </div>
-            <div class="kpi">
-              <div class="kpi-label">
-                <span class="kpi-icon" aria-hidden="true">
-                  <svg viewBox="0 0 24 24">
-                    <circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.7" />
-                    <path d="M12 7v5l3 2" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" />
-                  </svg>
-                </span>
-                <span data-i18n="kpi_active">アクティブ時間</span>
-              </div>
-              <div class="kpi-value"><b id="kpi-active-time">—</b></div>
-            </div>
           </div>
 
           <div class="trip-row">
@@ -169,8 +157,12 @@
                 <span class="trip-unit" id="trip-mouse-unit">m</span>
               </div>
               <div class="trip-progress">
-                <div class="trip-bar">
-                  <div class="trip-fill" id="trip-mouse-fill" style="width: 0%"></div>
+                <div class="trip-donut" aria-hidden="true">
+                  <svg class="trip-ring" viewBox="0 0 120 120">
+                    <circle class="trip-ring-track" cx="60" cy="60" r="50" pathLength="100"></circle>
+                    <circle class="trip-ring-fill" id="trip-mouse-ring" cx="60" cy="60" r="50" pathLength="100"></circle>
+                  </svg>
+                  <div class="trip-goal" id="trip-mouse-goal"></div>
                 </div>
                 <p class="trip-cmp" id="trip-mouse-cmp">—</p>
               </div>
@@ -190,8 +182,12 @@
                 <span class="trip-unit" id="trip-scroll-unit">m</span>
               </div>
               <div class="trip-progress">
-                <div class="trip-bar">
-                  <div class="trip-fill" id="trip-scroll-fill" style="width: 0%"></div>
+                <div class="trip-donut" aria-hidden="true">
+                  <svg class="trip-ring" viewBox="0 0 120 120">
+                    <circle class="trip-ring-track" cx="60" cy="60" r="50" pathLength="100"></circle>
+                    <circle class="trip-ring-fill" id="trip-scroll-ring" cx="60" cy="60" r="50" pathLength="100"></circle>
+                  </svg>
+                  <div class="trip-goal" id="trip-scroll-goal"></div>
                 </div>
                 <p class="trip-cmp" id="trip-scroll-cmp">—</p>
               </div>
