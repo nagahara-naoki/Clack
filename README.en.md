@@ -13,7 +13,7 @@ A local-only desktop app that records keyboard and mouse activity, one day at a 
 [![Built with Tauri](https://img.shields.io/badge/built%20with-Tauri%202-FFC131?style=flat-square)](https://tauri.app)
 [![Made with Rust](https://img.shields.io/badge/made%20with-Rust-CE4124?style=flat-square&logo=rust)](https://www.rust-lang.org)
 
-[**📥 Download latest**](https://github.com/YOUR-USERNAME/clack/releases/latest) ・ [Website](https://YOUR-USERNAME.github.io/clack/) ・ [日本語](README.md) / **English**
+[**📥 Download latest**](https://github.com/nagahara-naoki/Clack/releases/latest) ・ [Website](https://nagahara-naoki.github.io/Clack/) ・ [日本語](README.md) / **English**
 
 </div>
 
@@ -100,7 +100,7 @@ Clack records the number of keyboard and mouse interactions **per day** and visu
 
 ## Download
 
-→ [**Latest release**](https://github.com/YOUR-USERNAME/clack/releases/latest)
+→ [**Latest release**](https://github.com/nagahara-naoki/Clack/releases/latest)
 
 ### Windows
 
@@ -266,7 +266,7 @@ date,keys,mouse,total,h0,h1,h2,...,h23
 See **[RUN.md](RUN.md)** for the full guide. Quick start:
 
 ```sh
-git clone https://github.com/YOUR-USERNAME/clack.git
+git clone https://github.com/nagahara-naoki/Clack.git
 cd clack
 npm install
 npm run build              # OS-specific artifacts
@@ -339,7 +339,7 @@ git push --follow-tags
 
 ## Contributing
 
-- Bug reports / feature requests: please open an [issue](https://github.com/YOUR-USERNAME/clack/issues).
+- Bug reports / feature requests: please open an [issue](https://github.com/nagahara-naoki/Clack/issues).
 - Pull requests are welcome.
 - Coding conventions: see the security note at the top of `src/main.js`, and `Cargo.toml`'s `lints` block for Rust.
 

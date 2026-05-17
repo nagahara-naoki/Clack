@@ -11,7 +11,7 @@ use std::path::PathBuf;
 
 use tauri::menu::{CheckMenuItem, Menu, MenuItem, PredefinedMenuItem};
 use tauri::tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent};
-use tauri::{AppHandle, Manager, Wry};
+use tauri::{image::Image, AppHandle, Manager, Wry};
 
 /// トレイ tooltip のベース文字列。`update_paused_state` で「(一時停止中)」
 /// を足し外しする。
@@ -33,6 +33,47 @@ pub struct TrayHandles {
     pub autostart_check: CheckMenuItem<Wry>,
     pub pause_check: CheckMenuItem<Wry>,
     pub live_check: CheckMenuItem<Wry>,
+}
+
+fn tray_template_icon() -> Image<'static> {
+    const W: usize = 18;
+    const H: usize = 18;
+    let mut rgba = vec![0u8; W * H * 4];
+
+    let mut set = |x: usize, y: usize| {
+        if x >= W || y >= H {
+            return;
+        }
+        let i = (y * W + x) * 4;
+        rgba[i] = 255;
+        rgba[i + 1] = 255;
+        rgba[i + 2] = 255;
+        rgba[i + 3] = 255;
+    };
+
+    // Tiny outline keyboard. macOS recolors it because the tray builder marks
+    // the image as a template below.
+    for x in 3..=14 {
+        set(x, 5);
+        set(x, 12);
+    }
+    for y in 5..=12 {
+        set(3, y);
+        set(14, y);
+    }
+    for x in [5, 8, 11] {
+        set(x, 7);
+        set(x + 1, 7);
+    }
+    for x in [5, 8, 11] {
+        set(x, 9);
+        set(x + 1, 9);
+    }
+    for x in 6..=11 {
+        set(x, 11);
+    }
+
+    Image::new_owned(rgba, W as u32, H as u32)
 }
 
 /// トレイアイコンとコンテキストメニューを構築する。
@@ -79,15 +120,9 @@ pub fn build_tray(app: &AppHandle, autostart_enabled: bool) -> tauri::Result<()>
         ],
     )?;
 
-    // アイコンはバンドル時にビルドへ埋め込まれている既定アイコンを使う。
-    // 取得失敗 = ビルドの問題なので startup でちゃんと落とす。
-    let icon = app
-        .default_window_icon()
-        .cloned()
-        .ok_or_else(|| tauri::Error::AssetNotFound("default-window-icon".into()))?;
-
     let _tray = TrayIconBuilder::with_id("main-tray")
-        .icon(icon)
+        .icon(tray_template_icon())
+        .icon_as_template(true)
         .tooltip(TOOLTIP_BASE)
         .menu(&menu)
         .show_menu_on_left_click(false)

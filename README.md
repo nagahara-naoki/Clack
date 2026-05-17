@@ -13,7 +13,7 @@
 [![Built with Tauri](https://img.shields.io/badge/built%20with-Tauri%202-FFC131?style=flat-square)](https://tauri.app)
 [![Made with Rust](https://img.shields.io/badge/made%20with-Rust-CE4124?style=flat-square&logo=rust)](https://www.rust-lang.org)
 
-[**📥 最新版をダウンロード**](https://github.com/YOUR-USERNAME/clack/releases/latest) ・ [紹介ページ](https://YOUR-USERNAME.github.io/clack/) ・ **日本語** / [English](README.en.md)
+[**📥 最新版をダウンロード**](https://github.com/nagahara-naoki/Clack/releases/latest) ・ [紹介ページ](https://nagahara-naoki.github.io/Clack/) ・ **日本語** / [English](README.en.md)
 
 </div>
 
@@ -100,7 +100,7 @@ Clack はキーボードとマウスの操作回数を **1 日ごと** に記録
 
 ## ダウンロード
 
-→ [**最新リリース**](https://github.com/YOUR-USERNAME/clack/releases/latest)
+→ [**最新リリース**](https://github.com/nagahara-naoki/Clack/releases/latest)
 
 ### Windows
 
@@ -266,7 +266,7 @@ date,keys,mouse,total,h0,h1,h2,...,h23
 詳細は **[RUN.md](RUN.md)** を参照してください。最短手順:
 
 ```sh
-git clone https://github.com/YOUR-USERNAME/clack.git
+git clone https://github.com/nagahara-naoki/Clack.git
 cd clack
 npm install
 npm run build              # OS に応じた成果物を生成
@@ -339,7 +339,7 @@ git push --follow-tags
 
 ## 貢献
 
-- バグ報告 / 機能要望は [Issues](https://github.com/YOUR-USERNAME/clack/issues) へ
+- バグ報告 / 機能要望は [Issues](https://github.com/nagahara-naoki/Clack/issues) へ
 - Pull Request も歓迎します
 - コーディング規約は `src/main.js` 冒頭のセキュリティ方針コメント、Rust 側は `Cargo.toml` の `lints` 設定をご参照ください
 
