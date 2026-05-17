@@ -87,20 +87,14 @@ pub struct DataSize {
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Analytics {
-    /// 全期間の合計打鍵数。
-    pub keys_total: u64,
-    /// 全期間の合計クリック数。
-    pub mouse_total: u64,
     /// データのある日数 (今日含む)。0 ならフロントは「データなし」を出す。
     pub days: u64,
-    /// 全期間で最も活発だった日と、その合計値 (パーソナルベスト)。
-    pub best_day: Option<BestDay>,
-    /// 今日含めた連続入力日数。今日が 0 の場合は前日までを数える。
-    pub streak: u64,
     /// キー内訳 (label, count) を降順。最大 30 件。
     pub keys: Vec<LabelCount>,
     /// マウス内訳 (label, count) を降順。Left/Right/Middle のみ。
     pub mouse: Vec<LabelCount>,
+    /// スコープ内の 1 日あたり平均総操作数。
+    pub average_per_day: u64,
     /// 時間帯別 (0..23 時) の活動量合計。スコープ内の全日を合算済み。
     pub hourly: Vec<u64>,
     /// `hourly` の中の最大値。フロントで色階調の正規化に使う。
@@ -117,13 +111,6 @@ pub struct Analytics {
 pub struct LabelCount {
     pub label: String,
     pub count: u64,
-}
-
-#[derive(Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct BestDay {
-    pub date: String,
-    pub total: u64,
 }
 
 /// エクスポートファイルの構造体 (バージョン付き)。
@@ -439,23 +426,16 @@ pub fn get_analytics(
     let mut mouse_map: HashMap<String, u64> = HashMap::new();
     // hourly[0..23]: スコープ内の全日を時間帯ごとに合算した値。
     let mut hourly = vec![0u64; 24];
-    let mut best_day: Option<BestDay> = None;
     let mut day_count = 0u64;
     // 「旅」用の累計値。スコープ内全日を足す。
     let mut mouse_distance_px_total = 0u64;
     let mut scroll_y_ticks_total = 0u64;
     let mut active_ms_total = 0u64;
 
-    let mut consume = |date_str: &str, stats: &DayStats| {
+    let mut consume = |_date_str: &str, stats: &DayStats| {
         let total = stats.keys.saturating_add(stats.mouse);
         if total > 0 {
             day_count = day_count.saturating_add(1);
-            if best_day.as_ref().map_or(true, |b| b.total < total) {
-                best_day = Some(BestDay {
-                    date: date_str.to_string(),
-                    total,
-                });
-            }
         }
         keys_total = keys_total.saturating_add(stats.keys);
         mouse_total = mouse_total.saturating_add(stats.mouse);
@@ -487,11 +467,6 @@ pub fn get_analytics(
         consume(&s.today, &s.today_stats);
     }
 
-    // ストリーク: 今日から遡り、活動のある日が連続している長さ。
-    // 今日が 0 のときは昨日から数え始める (まだ作業前の朝など)。
-    // スコープに関わらず常に「現在のストリーク」を返す。
-    let streak = compute_streak(&s);
-
     let mut keys: Vec<LabelCount> = keys_map
         .into_iter()
         .map(|(label, count)| LabelCount { label, count })
@@ -506,58 +481,20 @@ pub fn get_analytics(
     mouse.sort_by(|a, b| b.count.cmp(&a.count));
 
     let hourly_max = hourly.iter().copied().max().unwrap_or(0);
+    let total_actions = keys_total.saturating_add(mouse_total);
+    let average_per_day = if day_count > 0 { total_actions / day_count } else { 0 };
 
     Analytics {
-        keys_total,
-        mouse_total,
         days: day_count,
-        best_day,
-        streak,
         keys,
         mouse,
+        average_per_day,
         hourly,
         hourly_max,
         mouse_distance_px: mouse_distance_px_total,
         scroll_y_ticks: scroll_y_ticks_total,
         active_ms: active_ms_total,
     }
-}
-
-fn compute_streak(s: &AppState) -> u64 {
-    let today_total = s.today_stats.keys.saturating_add(s.today_stats.mouse);
-    let Some(mut cursor) = date_util::parse_date(&s.today) else {
-        return 0;
-    };
-    if today_total == 0 {
-        // 今日はまだ何もしていないので、起点は昨日。
-        cursor = match cursor.previous_day() {
-            Some(d) => d,
-            None => return 0,
-        };
-    }
-    let mut count = 0u64;
-    // 過去 10 年で頭打ちにして無限ループの安全弁。
-    for _ in 0..3650 {
-        let ds = date_util::format_date(cursor);
-        let has = if ds == s.today {
-            today_total > 0
-        } else {
-            s.history
-                .get(&ds)
-                .map(|st| st.keys.saturating_add(st.mouse) > 0)
-                .unwrap_or(false)
-        };
-        if has {
-            count = count.saturating_add(1);
-            cursor = match cursor.previous_day() {
-                Some(d) => d,
-                None => return count,
-            };
-        } else {
-            break;
-        }
-    }
-    count
 }
 
 // ----------------------------------------------------------------

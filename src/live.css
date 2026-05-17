@@ -13,13 +13,7 @@ html, body {
   margin: 0;
   padding: 0;
   height: 100%;
-  /* ベース: ごく僅かな縦グラデで奥行きを出す。完全フラットだと
-     glass effect が安っぽく見えるため。 */
-  background:
-    linear-gradient(
-      180deg,
-      rgba(16, 18, 22, 0.58) 0%,
-      rgba(12, 14, 18, 0.62) 100%);
+  background: rgba(14, 16, 20, 0.60);
   color: rgba(255, 255, 255, 0.92);
   font-family: system-ui, -apple-system, BlinkMacSystemFont,
     "Segoe UI Variable", "Segoe UI", "Hiragino Kaku Gothic ProN",
@@ -48,10 +42,7 @@ html:active, body:active { cursor: grabbing; }
   align-items: center;
   justify-content: space-between;
   padding: 0 4px 0 14px;
-  background: linear-gradient(
-    180deg,
-    rgba(0, 0, 0, 0.28) 0%,
-    rgba(0, 0, 0, 0.18) 100%);
+  background: rgba(0, 0, 0, 0.20);
   color: rgba(255, 255, 255, 0.55);
   font-size: 10px;
   font-weight: 700;
@@ -146,7 +137,7 @@ html:active, body:active { cursor: grabbing; }
   white-space: nowrap;
   /* 半透明背景でも文字が滲まないよう、ごく薄い影で輪郭を補強。 */
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.55);
-  animation: chip-in 70ms linear;
+  animation: none;
 }
 
 /* 最新チップ: 不透明度 100% の白 + 微発光で「いま入力された 1 個」を強調。
@@ -161,15 +152,7 @@ html:active, body:active { cursor: grabbing; }
 /* フェードアウト: 縦に少し抜けながら消える。
    非スタック時の「スワップ」演出と相性が良い。 */
 .chip.is-fading {
-  animation: chip-out 80ms linear forwards;
-}
-
-@keyframes chip-in {
-  from { opacity: 0; }
-  to   { opacity: 1; }
-}
-@keyframes chip-out {
-  to { opacity: 0; }
+  opacity: 0.2;
 }
 
 @media (prefers-reduced-motion: reduce) {

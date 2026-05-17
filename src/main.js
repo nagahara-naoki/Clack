@@ -243,14 +243,9 @@
       anal_keys_sub: "入力回数の多い順 (全期間)",
       anal_mouse_title: "マウス",
       anal_mouse_sub: "ボタン別の内訳",
-      kpi_streak: "連続日数",
-      kpi_streak_unit: "日",
-      kpi_best: "最多日",
-      kpi_best_unit: "操作",
+      kpi_average: "1日平均",
+      kpi_average_unit: "操作",
       kpi_active: "アクティブ時間",
-      kpi_total: "累計",
-      kpi_strokes: "打鍵",
-      kpi_clicks: "クリック",
       hourTooltip: (hour, val) =>
         `${hour}:00–${hour}:59 ・ ${val}`,
       noAnalytics: "まだデータがありません",
@@ -307,14 +302,9 @@
       anal_keys_sub: "Top keys by press count (all time)",
       anal_mouse_title: "Mouse",
       anal_mouse_sub: "Per-button breakdown",
-      kpi_streak: "Streak",
-      kpi_streak_unit: "d",
-      kpi_best: "Best day",
-      kpi_best_unit: "events",
+      kpi_average: "Daily avg",
+      kpi_average_unit: "events",
       kpi_active: "Active time",
-      kpi_total: "Total",
-      kpi_strokes: "keys",
-      kpi_clicks: "clicks",
       hourTooltip: (hour, val) =>
         `${hour}:00–${hour}:59 · ${val}`,
       noAnalytics: "No data yet",
@@ -433,6 +423,8 @@
     analyticsLoaded: false,
     /** 現在のタブ名 ("cal" | "analytics" | "list")。 */
     currentTab: "cal",
+    /** カレンダー初期描画の幅が未確定だったときの再試行回数。 */
+    calendarRetry: 0,
     /** 一時停止中かどうか (バッジ表示用)。 */
     paused: false,
     /** 分析タブの集計スコープ ("today" | "week" | "month" | "all")。 */
@@ -634,7 +626,10 @@
 
     // セルサイズを実際のレイアウト幅から算出して CSS 変数に反映。
     const calGrid = grid.closest(".cal-grid") || grid.parentNode;
-    const availableW = calGrid ? calGrid.clientWidth : 720;
+    const availableW = calGrid ? calGrid.clientWidth : 0;
+    if (availableW < 120) {
+      return false;
+    }
     const { cellW, cellH } = computeCellSize(totalWeeks, availableW);
     calGrid.style.setProperty("--cell-w", `${cellW}px`);
     calGrid.style.setProperty("--cell-h", `${cellH}px`);
@@ -704,7 +699,7 @@
       frag.appendChild(colEl);
     }
     grid.appendChild(frag);
-
+    return true;
   }
 
   // ============================================================
@@ -779,8 +774,15 @@
     if (seq !== state.refreshSeq) return;
     if (!Array.isArray(data)) return;
 
-    buildHeatmap(data, period, today);
+    const heatmapReady = buildHeatmap(data, period, today);
     buildList(data, today);
+
+    if (!heatmapReady && state.calendarRetry < 6) {
+      state.calendarRetry += 1;
+      requestAnimationFrame(() => refresh().catch(() => {}));
+      return;
+    }
+    state.calendarRetry = 0;
 
     // フッターの当月合計
     const ym = `${today.getFullYear()}-${pad2(today.getMonth() + 1)}`;
@@ -803,9 +805,6 @@
   function setupTabs() {
     const tabIds = ["cal", "analytics", "list"];
     const activate = (which) => {
-      const prevIndex = tabIds.indexOf(state.currentTab);
-      const nextIndex = tabIds.indexOf(which);
-      const dir = nextIndex >= prevIndex ? "forward" : "back";
       if (which === state.currentTab) return;
       state.currentTab = which;
       for (const t of tabIds) {
@@ -818,12 +817,6 @@
         }
         if (view) {
           view.hidden = !on;
-          if (on) {
-            // 表示されるビューに短い方向付きアニメーションを当て直す。
-            view.classList.remove("is-entering", "is-forward", "is-back");
-            // フレームを 1 回挟まないと animation 再起動しない
-            requestAnimationFrame(() => view.classList.add("is-entering", `is-${dir}`));
-          }
         }
       }
       if (which === "analytics") {
@@ -879,17 +872,7 @@
     state.analyticsLoaded = true;
 
     // ---- KPI
-    $("kpi-streak-num").textContent = fmtNum(data.streak);
-    if (data.bestDay && data.bestDay.total > 0) {
-      const d = parseDate(data.bestDay.date);
-      $("kpi-best-date").textContent = d ? L().listDate(d) : data.bestDay.date;
-      $("kpi-best-total").textContent = fmtNum(data.bestDay.total);
-    } else {
-      $("kpi-best-date").textContent = "—";
-      $("kpi-best-total").textContent = "0";
-    }
-    $("kpi-keys-total").textContent = fmtNum(data.keysTotal);
-    $("kpi-mouse-total").textContent = fmtNum(data.mouseTotal);
+    $("kpi-average-num").textContent = fmtNum(data.averagePerDay);
     $("kpi-active-time").textContent = fmtDuration(data.activeMs);
 
     // ---- 旅 (マウス移動距離 + スクロール累計の換算)
@@ -925,7 +908,7 @@
     );
 
     // データ皆無時のフォールバック
-    const hasAny = data.keysTotal + data.mouseTotal > 0;
+    const hasAny = data.days > 0;
     for (const id of ["keys-breakdown", "mouse-breakdown"]) {
       const el = $(id);
       if (!hasAny && el.childElementCount === 0) {

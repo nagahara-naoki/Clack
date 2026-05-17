@@ -170,7 +170,8 @@ hr {
   flex-direction: column;
   min-height: 100vh;
   padding: 18px 24px 14px;
-  background: transparent;
+  background: color-mix(in srgb, var(--bg) 86%, transparent);
+  backdrop-filter: blur(14px);
 }
 
 /* ---------- Header --------------------------------------- */
@@ -585,6 +586,9 @@ hr {
   flex-direction: column;
   gap: 4px;
   font-variant-numeric: tabular-nums;
+  align-self: flex-start;
+  width: max-content;
+  max-width: 100%;
   /* These vars are overwritten by JS each refresh based on window width
      and selected period length. */
   --cell-w: 12px;
@@ -596,6 +600,8 @@ hr {
   gap: var(--cell-gap);
   padding-left: 22px; /* aligns with cells, past the dow axis column */
   height: 14px;
+  width: max-content;
+  min-width: 100%;
   font-size: 10.5px;
   color: var(--fg-faint);
   letter-spacing: 0.02em;
@@ -613,6 +619,8 @@ hr {
   display: flex;
   gap: 6px;
   align-items: flex-start;
+  width: max-content;
+  min-width: 100%;
 }
 
 .cal-dow {
@@ -635,6 +643,7 @@ hr {
 .cal-weeks {
   display: flex;
   gap: var(--cell-gap);
+  width: max-content;
 }
 
 .cal-col {
@@ -693,14 +702,11 @@ hr {
 /* ---------- KPI row ---------------------------------------- */
 .kpi-row {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 12px;
   align-items: stretch;
 }
 
-@media (max-width: 880px) {
-  .kpi-row { grid-template-columns: repeat(2, 1fr); }
-}
 @media (max-width: 480px) {
   .kpi-row { grid-template-columns: 1fr; }
 }
@@ -711,11 +717,12 @@ hr {
   flex-direction: column;
   gap: 4px;
   padding: 12px 16px;
-  background: var(--bg-soft);
+  background: color-mix(in srgb, var(--bg) 82%, transparent);
   border: 1px solid var(--border);
   box-shadow: none;
   border-radius: var(--radius-md);
   min-width: 0;
+  backdrop-filter: blur(10px);
 }
 
 .kpi-label {
@@ -797,15 +804,12 @@ hr {
   flex-direction: column;
   gap: 8px;
   padding: 14px 18px 16px;
-  background: var(--bg-soft);
+  background: color-mix(in srgb, var(--bg) 84%, transparent);
   border: 1px solid var(--border);
   box-shadow: none;
   border-radius: var(--radius-md);
   min-width: 0;
-}
-
-.trip-card:nth-child(2) {
-  background: var(--bg-soft);
+  backdrop-filter: blur(10px);
 }
 
 .trip-head {
@@ -908,11 +912,12 @@ hr {
   flex-direction: column;
   gap: 14px;
   padding: 16px 18px 18px;
-  background: var(--bg-elev);
+  background: color-mix(in srgb, var(--bg) 84%, transparent);
   border: 1px solid var(--border);
   box-shadow: none;
   border-radius: var(--radius-md);
   min-width: 0;
+  backdrop-filter: blur(10px);
 }
 
 .section-head {
@@ -989,9 +994,6 @@ hr {
   border-radius: 999px 999px 3px 3px;
   background: var(--accent);
   box-shadow: none;
-  transform-origin: bottom;
-  animation: hour-rise 420ms cubic-bezier(.22, 1, .36, 1) both;
-  animation-delay: var(--delay);
 }
 
 .hour-heatmap .hh-chart[data-empty="true"] .hh-bar {
@@ -1012,14 +1014,7 @@ hr {
   color: var(--fg-muted);
 }
 
-.hour-heatmap .hh-cell:hover .hh-bar {
-  filter: brightness(1.08);
-}
-
-@keyframes hour-rise {
-  from { transform: scaleY(0.08); opacity: 0.35; }
-  to   { transform: scaleY(1); opacity: 1; }
-}
+.hour-heatmap .hh-cell:hover .hh-bar { filter: brightness(1.06); }
 
 /* ---------- Breakdown bars -------------------------------- */
 .analytics-row {
@@ -1073,12 +1068,6 @@ hr {
   height: 100%;
   background: var(--accent);
   border-radius: inherit;
-  animation: bar-grow 360ms cubic-bezier(.22, 1, .36, 1) both;
-}
-
-@keyframes bar-grow {
-  from { transform: scaleX(0.04); transform-origin: left; opacity: 0.45; }
-  to   { transform: scaleX(1); transform-origin: left; opacity: 1; }
 }
 
 .br-num {
@@ -1099,32 +1088,8 @@ hr {
   display: none !important;
 }
 
-/* タブ切替時に新しいビューが方向を持って入る短い演出。
-   スライド量は小さく、操作の軽さを邪魔しない。 */
-@keyframes view-fade-in-forward {
-  from { opacity: 0; transform: translateX(10px); }
-  to   { opacity: 1; transform: translateX(0); }
-}
-
-@keyframes view-fade-in-back {
-  from { opacity: 0; transform: translateX(-10px); }
-  to   { opacity: 1; transform: translateX(0); }
-}
-
-.view.is-entering {
-  animation: view-fade-in-forward 190ms cubic-bezier(.22, 1, .36, 1);
-}
-
-.view.is-entering.is-back {
-  animation-name: view-fade-in-back;
-}
-
 @media (prefers-reduced-motion: reduce) {
-  .view.is-entering,
-  .hour-heatmap .hh-bar,
-  .br-fill {
-    animation: none;
-  }
+  .trip-fill { transition: none; }
 }
 
 .list-head {
