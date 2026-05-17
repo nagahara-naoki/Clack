@@ -206,6 +206,15 @@ pub fn run() {
             let app_handle = app.handle().clone();
             let paths = resolve_paths(&app_handle)?;
 
+            #[cfg(target_os = "macos")]
+            {
+                // Dock に出さず、メニューバー常駐の補助アプリとして扱う。
+                // これで起動中も Dock にアイコンが残らず、バックグラウンド
+                // 計測の見た目だけを静かに保てる。
+                let _ = app_handle.set_activation_policy(tauri::ActivationPolicy::Accessory);
+                let _ = app_handle.set_dock_visibility(false);
+            }
+
             // Ask after Tauri has initialized the bundled app. macOS TCC tracks
             // permissions against the app identity, and prompting too early can
             // make unsigned release builds look untrusted on every launch.
