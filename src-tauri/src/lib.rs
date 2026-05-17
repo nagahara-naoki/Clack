@@ -220,6 +220,7 @@ pub fn run() {
             // 設定 + 履歴を読み込んでアプリ状態を構築。
             let user_settings = Settings::read(&paths.settings_path);
             let idle_secs = user_settings.idle_threshold_seconds;
+            let background_start_enabled = user_settings.background_start_enabled;
             let history = storage::read(&paths.data_path);
             let today_str = date_util::today();
             let app_state = AppState::new(today_str, history, idle_secs);
@@ -232,9 +233,11 @@ pub fn run() {
             app.manage(paths.clone());
             app.manage(ExitState::default());
 
-            // 仕様 §3.6 — 初回起動時に自動起動を ON にする。
+            // 仕様 §3.6 — 初回セットアップ後は OS ログイン時に裏で常駐する。
+            // 旧バージョンで OS 側の LaunchAgent / Run 登録が消えていても、
+            // settings.json の意思 (既存ユーザーは default true) を正として復元する。
             use tauri_plugin_autostart::ManagerExt;
-            if first_run {
+            if background_start_enabled {
                 let _ = app_handle.autolaunch().enable();
             }
             let auto_enabled = app_handle.autolaunch().is_enabled().unwrap_or(false);

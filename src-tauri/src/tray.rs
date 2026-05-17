@@ -240,6 +240,7 @@ fn toggle_live_display(app: &AppHandle) {
 /// トレイの「自動起動」項目を切替。チェック表示と他ウィンドウへの通知も
 /// 同期して行う (設定ウィンドウが開いていれば即座に反映される)。
 fn toggle_autostart(app: &AppHandle) {
+    use crate::commands::SettingsHandle;
     use tauri_plugin_autostart::ManagerExt;
     let enabled = app.autolaunch().is_enabled().unwrap_or(false);
     let res = if enabled { app.autolaunch().disable() } else { app.autolaunch().enable() };
@@ -248,6 +249,19 @@ fn toggle_autostart(app: &AppHandle) {
         return;
     }
     let new_state = !enabled;
+    if let (Some(settings), Some(paths)) = (
+        app.try_state::<SettingsHandle>(),
+        app.try_state::<AppPaths>(),
+    ) {
+        let write_res = {
+            let mut s = settings.lock().unwrap_or_else(|e| e.into_inner());
+            s.background_start_enabled = new_state;
+            s.write(&paths.settings_path)
+        };
+        if let Err(e) = write_res {
+            eprintln!("autostart preference save failed: {e}");
+        }
+    }
     update_autostart_check(app, new_state);
     use tauri::Emitter;
     let _ = app.emit("autostart-changed", new_state);

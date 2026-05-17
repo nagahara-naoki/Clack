@@ -9,10 +9,10 @@
 //! - **`theme`**: `"light" | "dark" | "auto"`。`"auto"` は OS のテーマに追従。
 //! - **`language`**: `"ja" | "en"`。フロントの表示言語。
 //! - **`months_shown`**: ヒートマップの表示期間 (1, 3, 6, 12 のいずれか)。
-//!
-//! 自動起動の有無は `tauri-plugin-autostart` が OS 側 (Windows のレジストリ
-//! `HKCU\...\Run`、macOS の LaunchAgent plist) に書き込むため、本構造体
-//! には含めない。
+//! - **`background_start_enabled`**: OS ログイン時に裏で常駐起動するか。
+//!   実際の登録は `tauri-plugin-autostart` が OS 側へ書き込むが、登録が
+//!   消えた場合でも次回起動時に復元できるよう、ユーザーの意思はこちらにも
+//!   保存する。
 
 use std::fs;
 use std::io::{self, Write};
@@ -45,12 +45,15 @@ pub struct Settings {
     pub language: String,
     #[serde(default = "default_months_shown")]
     pub months_shown: u32,
+    #[serde(default = "default_background_start")]
+    pub background_start_enabled: bool,
 }
 
 fn default_idle() -> u64 { 60 }
 fn default_theme() -> String { "auto".to_string() }
 fn default_language() -> String { "ja".to_string() }
 fn default_months_shown() -> u32 { 6 }
+fn default_background_start() -> bool { true }
 
 impl Default for Settings {
     fn default() -> Self {
@@ -59,6 +62,7 @@ impl Default for Settings {
             theme: default_theme(),
             language: default_language(),
             months_shown: default_months_shown(),
+            background_start_enabled: default_background_start(),
         }
     }
 }

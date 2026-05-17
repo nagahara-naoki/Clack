@@ -289,9 +289,14 @@ pub fn get_autostart_enabled(app: AppHandle) -> Result<bool, String> {
 
 /// 自動起動の ON/OFF を切替。
 /// プラグインが OS 側 (Windows: レジストリ Run キー / macOS: LaunchAgent)
-/// に書き込む。`settings.json` には影響しない。
+/// に書き込み、同時に `settings.json` へユーザーの意思として保存する。
 #[tauri::command]
-pub fn set_autostart_enabled(app: AppHandle, enabled: bool) -> Result<(), String> {
+pub fn set_autostart_enabled(
+    app: AppHandle,
+    enabled: bool,
+    settings: State<'_, SettingsHandle>,
+    paths: State<'_, AppPaths>,
+) -> Result<(), String> {
     use tauri_plugin_autostart::ManagerExt;
     let res = if enabled {
         app.autolaunch().enable()
@@ -299,6 +304,11 @@ pub fn set_autostart_enabled(app: AppHandle, enabled: bool) -> Result<(), String
         app.autolaunch().disable()
     };
     res.map_err(|e| e.to_string())?;
+    {
+        let mut s = lock_settings(&settings);
+        s.background_start_enabled = enabled;
+        s.write(&paths.settings_path).map_err(|e| e.to_string())?;
+    }
     crate::tray::update_autostart_check(&app, enabled);
     Ok(())
 }
