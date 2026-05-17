@@ -1102,13 +1102,13 @@ hr {
 /* タブ切替時に新しいビューが方向を持って入る短い演出。
    スライド量は小さく、操作の軽さを邪魔しない。 */
 @keyframes view-fade-in-forward {
-  from { opacity: 0; transform: translateX(10px); filter: blur(1px); }
-  to   { opacity: 1; transform: translateX(0); filter: blur(0); }
+  from { opacity: 0; transform: translateX(10px); }
+  to   { opacity: 1; transform: translateX(0); }
 }
 
 @keyframes view-fade-in-back {
-  from { opacity: 0; transform: translateX(-10px); filter: blur(1px); }
-  to   { opacity: 1; transform: translateX(0); filter: blur(0); }
+  from { opacity: 0; transform: translateX(-10px); }
+  to   { opacity: 1; transform: translateX(0); }
 }
 
 .view.is-entering {
