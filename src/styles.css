@@ -24,6 +24,13 @@
   --accent-fg: #ffffff;
   --accent-soft: rgba(22, 163, 74, 0.10);
 
+  /* マウス系専用のオレンジアクセント。
+     キー (緑) と並べて読めるよう、分析タブのマウス関連要素 (距離カードの
+     リング/アイコン・「マウス」内訳のアイコンとバー) でだけ上書きする。 */
+  --accent-mouse: #f97316;          /* orange-500 */
+  --accent-mouse-hover: #ea580c;    /* orange-600 */
+  --accent-mouse-soft: rgba(249, 115, 22, 0.10);
+
   /* GitHub-style green heatmap */
   --cell-0: #ebedf0;
   --cell-1: #9be9a8;
@@ -68,6 +75,11 @@
   --accent-fg: #0a0a0b;
   --accent-soft: rgba(34, 197, 94, 0.12);
 
+  /* ダーク時は少し明度を上げてコントラスト確保。 */
+  --accent-mouse: #fb923c;          /* orange-400 */
+  --accent-mouse-hover: #f97316;
+  --accent-mouse-soft: rgba(251, 146, 60, 0.14);
+
   --cell-0: #20242b;
   --cell-1: #0e4429;
   --cell-2: #006d32;
@@ -100,6 +112,10 @@
     --accent-hover: #16a34a;
     --accent-fg: #0a0a0b;
     --accent-soft: rgba(34, 197, 94, 0.12);
+
+    --accent-mouse: #fb923c;
+    --accent-mouse-hover: #f97316;
+    --accent-mouse-soft: rgba(251, 146, 60, 0.14);
 
     --cell-0: #20242b;
     --cell-1: #0e4429;
@@ -164,23 +180,35 @@ hr {
 
 /* =========================================================
    Main window
-   ========================================================= */
+   =========================================================
+   .card は内側 padding を持たない。各セクション (.top / .body / .foot)
+   が独自の padding を持つことで、.top を sticky にしたときに横幅
+   いっぱいの背景 + 罫線が綺麗に取れる。 */
 .card {
   display: flex;
   flex-direction: column;
   min-height: 100vh;
-  padding: 18px 24px 14px;
+  padding: 0;
   background: color-mix(in srgb, var(--bg) 86%, transparent);
   backdrop-filter: blur(14px);
 }
 
-/* ---------- Header --------------------------------------- */
+/* ---------- Header (Sticky) -------------------------------
+   スクロールしても常に画面上部に居続けるトップバー。半透明 + ぼかしで
+   下のコンテンツが薄く透ける Mac 風グラスバー。 */
 .top {
+  position: sticky;
+  top: 0;
+  z-index: 50;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-  padding-bottom: 16px;
+  padding: 12px 24px;
+  background: color-mix(in srgb, var(--bg) 88%, transparent);
+  -webkit-backdrop-filter: blur(14px) saturate(140%);
+  backdrop-filter: blur(14px) saturate(140%);
+  border-bottom: 1px solid var(--border);
 }
 
 .brand {
@@ -248,73 +276,59 @@ hr {
   gap: 8px;
 }
 
-/* セグメントのコンテナ: 縁取りは撤去。背景色だけでグループを示し、
-   その中で「アクティブだけが白く浮き上がる」コントラストに集中させる。 */
+/* タブグループ: コンテナの枠取りは廃止。背景/罫線無しで「タブ達」を
+   並べるだけにし、アクティブ状態は個別ボタンの背景で示す。
+   ユーザーフィードバック「タブの周りのコンテナは不要」に対応。 */
 .seg {
   display: inline-flex;
-  background: var(--bg-soft);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-md);
-  padding: 2px;
+  gap: 2px;
+  background: transparent;
+  border: 0;
+  padding: 0;
 }
 
-/* セグメントボタン (タブ): グレースケールの 3 段階で状態を表現。
-   - inactive: 文字 faint、SVG も低不透明度
-   - hover   : 文字 muted (一段濃く)
-   - active  : 文字 fg-strong + 太字 + 白カード + 影
-   これでアクティブが「浮き上がる」見え方になる。 */
+/* タブボタン (カレンダー / 分析 / リスト)。
+   - 通常: テキスト fg-muted、SVG 0.75 不透明
+   - hover: テキスト fg、SVG 不透明 + 微背景
+   - active: 背景 + 軽い枠線 + 太字 (個別カプセル形式) */
 .seg-btn {
   display: inline-flex;
   align-items: center;
   gap: 6px;
   padding: 5px 12px;
-  border-radius: 6px;
+  border: 1px solid transparent;
+  border-radius: 7px;
+  background: transparent;
   font-size: 12.5px;
   font-weight: 500;
-  color: var(--fg-faint);
-  transition: background 100ms ease,
-              color 140ms ease,
-              box-shadow 100ms ease;
+  color: var(--fg-muted);
+  transition: background 100ms ease, color 140ms ease, border-color 140ms ease;
 }
 
 .seg-btn svg {
   width: 14px;
   height: 14px;
-  opacity: 0.70;
+  opacity: 0.75;
   transition: opacity 140ms ease;
 }
 
 .seg-btn:hover:not(.is-active):not([aria-checked="true"]) {
-  color: var(--fg-muted);
+  color: var(--fg);
+  background: var(--bg-hover);
 }
-.seg-btn:hover:not(.is-active):not([aria-checked="true"]) svg { opacity: 0.85; }
+.seg-btn:hover:not(.is-active):not([aria-checked="true"]) svg { opacity: 1; }
 
 .seg-btn.is-active,
 .seg-btn[aria-checked="true"] {
-  background: var(--bg-elev);
-  color: var(--fg-strong, var(--fg));
+  background: var(--bg-soft);
+  border-color: var(--border-strong);
+  color: var(--fg);
   font-weight: 600;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
 }
 
 .seg-btn.is-active svg,
 .seg-btn[aria-checked="true"] svg {
   opacity: 1;
-}
-
-:root[data-theme="dark"] .seg-btn.is-active,
-:root[data-theme="dark"] .seg-btn[aria-checked="true"] {
-  box-shadow:
-    0 1px 2px rgba(0, 0, 0, 0.5),
-    0 4px 12px rgba(0, 0, 0, 0.35);
-}
-@media (prefers-color-scheme: dark) {
-  :root[data-theme="auto"] .seg-btn.is-active,
-  :root[data-theme="auto"] .seg-btn[aria-checked="true"] {
-    box-shadow:
-      0 1px 2px rgba(0, 0, 0, 0.5),
-      0 4px 12px rgba(0, 0, 0, 0.35);
-  }
 }
 
 .icon-btn {
@@ -354,12 +368,16 @@ hr {
 
 /* =========================================================
    Body
-   ========================================================= */
+   =========================================================
+   .card には padding が無いため、.body / .foot がそれぞれ
+   左右 24px のインセットを担当する。.top は sticky 専用に
+   独自 padding を持っている (上部記述参照)。 */
 .body {
   flex: 1;
   display: flex;
   flex-direction: column;
   gap: 16px;
+  padding: 14px 24px 0;
 }
 
 /* ---------- Today row ------------------------------------- */
@@ -453,124 +471,189 @@ hr {
 }
 
 /* =========================================================
-   Calendar header
-   ========================================================= */
-.cal-head {
+   Calendar (Clack Refinement design)
+   =========================================================
+   構成:
+     1. cr-subhead          ── 日付 + 期間スイッチ (1/3/6/12ヶ月)
+     2. cr-cal-h            ── タイトル ("2025年5月 〜 2026年5月 · N日アクティブ")
+                                + 前後ナビ + 凡例 (少 ▢▢▢▢▢ 多)
+     3. cal-grid            ── 既存のヒートマップ (構造は流用)
+     4. cr-cal-foot         ── 日次合計 sparkline + 期間合計 (キー / マウス)
+*/
+
+.view-cal {
   display: flex;
-  align-items: center;
+  flex-direction: column;
+  gap: 16px;
+  flex: 1;
+  min-height: 0;
+}
+
+.cr-cal {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  flex: 1;
+  min-height: 0;
+}
+
+/* タイトル + ナビ + 凡例 */
+.cr-cal-h {
+  display: flex;
+  align-items: baseline;
   justify-content: space-between;
-  padding-bottom: 10px;
-  gap: 10px;
+  gap: 12px;
+  flex-wrap: wrap;
 }
 
-.cal-title {
-  font-size: 14px;
-  font-weight: 600;
+.cr-cal-h .title {
+  font-size: 12px;
+  color: var(--fg-muted);
+  letter-spacing: 0.02em;
+}
+
+.cr-cal-h .title b {
   color: var(--fg);
-  letter-spacing: -0.005em;
+  font-weight: 600;
+  margin-right: 6px;
 }
 
-.cal-head-right {
+.cr-cal-h .title .muted {
+  color: var(--fg-muted);
+}
+
+.cr-cal-h .controls {
   display: flex;
   align-items: center;
   gap: 14px;
 }
 
-/* ---------- Period slider (tick scale) -------------------
-   ラベル 4 つは 4 等分グリッドで配置されるので、各中心は 12.5% / 37.5% /
-   62.5% / 87.5%。一方、WebKit のレンジ入力は value=min/max でつまみが
-   トラック左/右端に貼り付くため、何もしないとつまみ中心は 0%+(thumb_w/2)
-   〜 100%-(thumb_w/2) を往復し、ラベル中心とずれる。
-   そこでスライダー本体を左右に `12.5% - 7px` ずつインセットして、つまみ
-   中心の到達範囲 = ラベル中心 になるよう揃える。 */
-.period-slider {
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-  width: 200px;
+.cr-cal-h .nav {
+  display: inline-flex;
+  gap: 4px;
 }
 
-.period-ticks {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  font-size: 10px;
-  font-weight: 600;
-  font-variant-numeric: tabular-nums;
-  letter-spacing: 0.04em;
-  color: var(--fg-faint);
-  user-select: none;
-}
-
-.period-ticks span {
-  text-align: center;
-  cursor: pointer;
-  padding: 1px 0;
-  transition: color 180ms ease;
-}
-
-.period-ticks span:hover { color: var(--fg-muted); }
-
-.period-ticks span.is-active {
-  color: var(--accent);
-  font-weight: 700;
-}
-
-.period-slider input[type="range"] {
-  -webkit-appearance: none;
-  appearance: none;
-  /* thumb 幅 14px。詳しい数式はこのブロック頭のコメント参照。 */
-  width: calc(75% + 14px);
-  margin: 0 calc(12.5% - 7px);
-  height: 18px;
-  background: transparent;
-  cursor: pointer;
-  outline: none;
-  padding: 0;
-}
-
-.period-slider input[type="range"]::-webkit-slider-runnable-track {
-  height: 3px;
-  background: var(--border-strong);
-  border-radius: 2px;
-  position: relative;
-}
-
-.period-slider input[type="range"]::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  appearance: none;
-  width: 14px;
-  height: 14px;
+.cr-cal-h .nav .icon-btn {
+  width: 26px;
+  height: 26px;
+  border: 1px solid var(--border);
   background: var(--bg);
-  border: 2px solid var(--accent);
-  border-radius: 50%;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
-  margin-top: -5.5px;
-  cursor: grab;
-  transition: box-shadow 100ms ease;
+  border-radius: 6px;
 }
 
-.period-slider input[type="range"]:hover::-webkit-slider-thumb,
-.period-slider input[type="range"]:focus-visible::-webkit-slider-thumb {
-  box-shadow: 0 0 0 4px rgba(34, 197, 94, 0.18), 0 1px 3px rgba(0,0,0,0.3);
+.cr-cal-h .nav .icon-btn:hover {
+  background: var(--bg-hover);
+  color: var(--fg);
 }
 
-.period-slider input[type="range"]:active::-webkit-slider-thumb {
-  cursor: grabbing;
+.cr-cal-h .nav .icon-btn svg { width: 12px; height: 12px; }
+
+/* 凡例: 少 [5階調セル] 多 */
+.cr-cal-h .legend {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 10.5px;
+  color: var(--fg-faint);
 }
 
-.cal-nav {
-  display: flex;
+.cr-cal-h .legend .scale {
+  display: inline-flex;
   gap: 2px;
 }
 
-.cal-nav .icon-btn {
-  width: 26px;
-  height: 26px;
+.cr-cal-h .legend .scale span {
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
 }
 
-.cal-nav .icon-btn svg {
-  width: 14px;
-  height: 14px;
+.cr-cal-h .legend .scale [data-l="0"] { background: var(--cell-0); }
+.cr-cal-h .legend .scale [data-l="1"] { background: var(--cell-1); }
+.cr-cal-h .legend .scale [data-l="2"] { background: var(--cell-2); }
+.cr-cal-h .legend .scale [data-l="3"] { background: var(--cell-3); }
+.cr-cal-h .legend .scale [data-l="4"] { background: var(--cell-4); }
+
+/* Calendar 下段: 日次合計の棒スパークライン (左) + 期間合計 (右)。
+   `margin-top: auto` で cr-cal の最下部 (= フッターのすぐ上) に貼り付ける。
+   ヒートマップとの間は flex の余白として "between" な空きが入る。 */
+.cr-cal-foot {
+  display: grid;
+  grid-template-columns: 1fr 240px;
+  gap: 32px;
+  padding-top: 4px;
+  align-items: end;
+  margin-top: auto;
+}
+
+.cr-cal-foot .sparkbox {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.cr-cal-foot .sparkbox-h {
+  display: flex;
+  justify-content: space-between;
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--fg-faint);
+  font-weight: 600;
+}
+
+.cr-cal-foot .sparkbox-h .muted {
+  text-transform: none;
+  letter-spacing: 0.04em;
+  font-weight: 500;
+  color: var(--fg-muted);
+}
+
+.cal-daily-spark {
+  width: 100%;
+  height: 30px;
+  display: block;
+}
+
+.cr-cal-foot .totals {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  align-items: flex-end;
+}
+
+.cr-cal-foot .totals .h {
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--fg-faint);
+  font-weight: 600;
+  margin-bottom: 2px;
+}
+
+.cr-cal-foot .totals .row {
+  display: flex;
+  align-items: baseline;
+  gap: 14px;
+}
+
+.cr-cal-foot .totals .row .lbl {
+  font-size: 11px;
+  color: var(--fg-muted);
+}
+
+.cr-cal-foot .totals .row .n {
+  font-size: 18px;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  color: var(--fg);
+  font-variant-numeric: tabular-nums;
+}
+
+@media (max-width: 720px) {
+  .cr-cal-foot { grid-template-columns: 1fr; gap: 16px; }
+  .cr-cal-foot .totals { align-items: flex-start; }
 }
 
 /* =========================================================
@@ -681,497 +764,789 @@ hr {
 }
 
 /* =========================================================
-   Analytics view
-   ========================================================= */
+   Analytics view (Clack Refinement design に準拠)
+   =========================================================
+   構成 (上から):
+     1. cr-subhead  ── 日付 + 期間スイッチ
+     2. cr-hero     ── 2 列 KPI (キー / マウス) + 14日スパークライン
+     3. cr-strip    ── 3 連ストリップ (1日平均 / マウス距離 / スクロール高)
+     4. cr-hours    ── 24 時間帯ヒストグラム (本日 + 7日平均overlay)
+     5. cr-bottom   ── 2 列パネル (よく使うキー / マウス内訳)
+
+   マウス系 (.is-mouse) は --accent-mouse (オレンジ) で上書き。
+
+   分析タブ表示中は body 上部の TODAY/STATS 行を隠す
+   (hero KPI が機能を引き継ぐ)。
+*/
+
+/* Refinement design:
+   - TODAY ラベル (日付セクション) と直下の罫線は廃止 (cr-subhead が日付を持つ)
+   - STATS (大きなキー / マウス数値) は **カレンダータブのみ** 表示する。
+     分析タブは自前の hero KPI を持つので不要、リストタブは行内に同情報あり
+     なので不要。ユーザー要望「カレンダーの TOP に大きく数値を載せたい」に
+     応える形で is-analytics / is-list 時だけ非表示。 */
+.card .today,
+.card .divider {
+  display: none;
+}
+
+.card.is-analytics .stats,
+.card.is-list .stats {
+  display: none;
+}
+
 .view-analytics {
   display: flex;
   flex-direction: column;
-  gap: 18px;
-  padding-top: 4px;
-  /* 最後のセクションがフッターの罫線に張り付くのを防ぐ呼吸スペース。 */
-  padding-bottom: 24px;
+  gap: 0;
+  /* card の左右 padding (24px) を負マージンで打ち消して、view-analytics 自体を
+     card 幅いっぱいに広げる。内側のセクションは padding/margin で 24px ずつ
+     詰めることで「枠線が card 端ぴったりに伸びる」設計に揃える。 */
+  margin: 0 -24px;
+  padding-bottom: 8px;
+  font-variant-numeric: tabular-nums;
 }
 
-/* スコープ切替セグメント (今日 / 7日 / 今月 / 全期間)。
-   ヘッダの seg と同じ見た目を踏襲。 */
-.analytics-scope {
+/* ---------- Sub-header (date + period switcher) ---------- */
+.cr-subhead {
   display: flex;
-  justify-content: flex-end;
-}
-
-/* ---------- KPI row ---------------------------------------- */
-.kpi-row {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
+  align-items: baseline;
+  justify-content: space-between;
   gap: 12px;
-  align-items: stretch;
+  padding: 0 24px;
 }
 
-@media (max-width: 480px) {
-  .kpi-row { grid-template-columns: 1fr; }
-}
-
-/* KPI: 罫線無し、背景の濃淡だけで「カード」感を最小限に。 */
-.kpi {
+.cr-date {
   display: flex;
-  flex-direction: column;
-  gap: 4px;
-  padding: 12px 16px;
-  background: color-mix(in srgb, var(--bg) 82%, transparent);
-  border: 1px solid var(--border);
-  box-shadow: none;
-  border-radius: var(--radius-md);
-  min-width: 0;
-  backdrop-filter: blur(10px);
+  gap: 10px;
+  align-items: baseline;
+  font-size: 12px;
+  color: var(--fg-muted);
 }
 
-.kpi-label {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 10.5px;
+.cr-date .today {
+  color: var(--fg);
   font-weight: 600;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
+}
+
+.cr-date .clock {
   color: var(--fg-faint);
 }
 
-.kpi-icon {
+/* 期間スイッチ: 4 連の独立した小ボタン。コンテナ枠は撤去 (デザイン参照)。
+   アクティブなボタンだけがほのかな枠と背景で強調される。 */
+.cr-range {
   display: inline-flex;
+  gap: 4px;
+}
+
+.cr-range button {
+  border: 1px solid transparent;
+  background: transparent;
+  padding: 4px 12px;
+  font: inherit;
+  font-size: 11px;
+  color: var(--fg-muted);
+  cursor: pointer;
+  border-radius: 7px;
+  transition: background 120ms ease, color 120ms ease, border-color 120ms ease;
+}
+
+.cr-range button:hover:not(.is-active):not([data-on="true"]) {
+  color: var(--fg);
+  background: var(--bg-hover);
+}
+
+.cr-range button.is-active,
+.cr-range button[data-on="true"] {
+  background: var(--bg-soft);
+  border-color: var(--border-strong);
+  color: var(--fg);
+  font-weight: 600;
+}
+
+/* ---------- Hero (2-column KPI) ---------- */
+.cr-hero {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 36px;
+  padding: 14px 24px 0;
+}
+
+.cr-kpi {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+
+.cr-kpi-h {
+  display: flex;
   align-items: center;
-  justify-content: center;
-  width: 14px;
-  height: 14px;
-  color: var(--accent);
+  gap: 6px;
+  font-size: 11px;
+  color: var(--fg-muted);
+  font-weight: 500;
+}
+
+.cr-kpi-h .ico {
+  display: inline-flex;
+  width: 13px;
+  height: 13px;
+  color: var(--fg-faint);
   flex: none;
 }
 
-.kpi-icon svg { width: 14px; height: 14px; }
+.cr-kpi-h .ico svg {
+  width: 13px;
+  height: 13px;
+}
 
-.kpi-value {
+.cr-kpi-row {
   display: flex;
   align-items: baseline;
-  gap: 6px;
-  font-variant-numeric: tabular-nums;
-  color: var(--fg);
+  gap: 10px;
   flex-wrap: wrap;
 }
 
-.kpi-value > b {
-  font-size: 22px;
-  font-weight: 600;
-  letter-spacing: -0.015em;
-  line-height: 1.1;
+/* 巨大な数値。Inter の Light で誌面的に。
+   文字詰めは -0.035em で見出し向き。 */
+.cr-kpi-n {
+  font-size: 64px;
+  font-weight: 300;
+  letter-spacing: -0.035em;
+  line-height: 0.95;
+  color: var(--fg);
 }
 
-.kpi-value .kpi-unit {
-  font-size: 10px;
-  font-weight: 600;
+.cr-kpi-u {
+  font-size: 10.5px;
+  letter-spacing: 0.18em;
+  color: var(--fg-faint);
+  font-weight: 500;
   text-transform: uppercase;
-  letter-spacing: 0.1em;
-  color: var(--fg-faint);
+  align-self: flex-end;
+  padding-bottom: 7px;
 }
 
-.kpi-value .kpi-sep {
-  color: var(--fg-faint);
-  font-size: 12px;
-}
-
-.kpi-value .kpi-sub {
-  display: inline-flex;
-  align-items: baseline;
-  gap: 4px;
-  font-size: 11px;
-  color: var(--fg-muted);
-  margin-left: 4px;
-}
-
-/* ---------- Trip cards (マウスの旅 / スクロール宇宙) -----
-   ローカル計測のおまけ機能。マウス移動距離やスクロール累計を
-   m / km に換算し、ランドマーク (富士山・カーマンライン等) と比較する。 */
-.trip-row {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 14px;
-}
-
-@media (max-width: 560px) {
-  .trip-row { grid-template-columns: 1fr; }
-}
-
-.trip-card {
-  display: grid;
-  grid-template-columns: 1fr 132px;
-  grid-template-rows: auto auto;
-  column-gap: 16px;
-  row-gap: 8px;
-  padding: 14px 18px 16px;
-  background: color-mix(in srgb, var(--bg) 84%, transparent);
-  border: 1px solid var(--border);
-  box-shadow: none;
-  border-radius: var(--radius-md);
-  min-width: 0;
-  backdrop-filter: blur(10px);
-}
-
-.trip-head {
+.cr-kpi-delta {
   display: flex;
   align-items: center;
-  gap: 8px;
-  grid-column: 1 / 2;
-  font-size: 10.5px;
-  font-weight: 700;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-  color: var(--fg-faint);
+  gap: 6px;
+  font-size: 11px;
+  color: var(--fg-muted);
+  margin-left: auto;
+  padding-bottom: 10px;
 }
 
-.trip-icon {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 16px;
-  height: 16px;
+.cr-kpi-delta .up {
   color: var(--accent);
-  flex: none;
+  font-weight: 600;
 }
 
-.trip-icon svg {
-  width: 14px;
-  height: 14px;
+.cr-kpi-delta .down {
+  color: #d97706;
+  font-weight: 600;
 }
 
-.trip-label {
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+:root[data-theme="dark"] .cr-kpi-delta .down {
+  color: #f59e0b;
+}
+@media (prefers-color-scheme: dark) {
+  :root[data-theme="auto"] .cr-kpi-delta .down {
+    color: #f59e0b;
+  }
+}
+
+/* スパークライン (14日推移)。
+   SVG 幅は 100%、高さは固定。
+   色は SVG の `color` プロパティ経由で伝播: 線・ドットは currentColor、
+   塗りグラデーションの stop も currentColor で受け取るので、
+   `.cr-kpi.is-mouse .cr-kpi-spark { color: var(--accent-mouse); }` だけで
+   緑→オレンジが一括で切り替わる。
+   線描画アニメーションは `.is-drawn` クラスを付けて stroke-dashoffset を
+   0 にする方式で再生する。 */
+.cr-kpi-spark {
+  width: 100%;
+  height: 24px;
+  display: block;
+  color: var(--accent);
+  opacity: 0.92;
+}
+
+.cr-kpi.is-mouse .cr-kpi-spark {
+  color: var(--accent-mouse);
+}
+
+.cr-kpi-spark .line {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.25;
+  vector-effect: non-scaling-stroke;
+  stroke-dasharray: var(--len, 100);
+  stroke-dashoffset: var(--len, 100);
+  transition: stroke-dashoffset 1100ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.cr-kpi-spark .area {
+  opacity: 0;
+  transition: opacity 700ms ease 350ms;
+}
+
+.cr-kpi-spark .dot {
+  opacity: 0;
+  fill: currentColor;
+  transition: opacity 220ms ease 1050ms;
+}
+
+.cr-kpi-spark.is-drawn .line { stroke-dashoffset: 0; }
+.cr-kpi-spark.is-drawn .area { opacity: 1; }
+.cr-kpi-spark.is-drawn .dot  { opacity: 1; }
+
+/* ---------- Stat strip (3-up) ---------- */
+.cr-strip {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0;
+  margin: 28px 24px 0;
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+}
+
+.cr-strip-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 16px 22px;
+  border-right: 1px solid var(--border);
   min-width: 0;
 }
 
-.trip-value {
+.cr-strip-cell:last-child {
+  border-right: 0;
+}
+
+.cr-strip-cell .lbl {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 10.5px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--fg-faint);
+  font-weight: 600;
+}
+
+.cr-strip-cell .lbl svg { width: 11px; height: 11px; }
+
+.cr-strip-cell .val {
   display: flex;
   align-items: baseline;
   gap: 6px;
-  grid-column: 1 / 2;
-  font-variant-numeric: tabular-nums;
-  margin-top: 2px;
 }
 
-.trip-num {
-  font-size: 30px;
-  font-weight: 700;
-  letter-spacing: -0.025em;
-  line-height: 1.1;
+.cr-strip-cell .val .n {
+  font-size: 24px;
+  font-weight: 400;
+  letter-spacing: -0.015em;
   color: var(--fg);
 }
 
-.trip-unit {
-  font-size: 13px;
-  font-weight: 600;
-  letter-spacing: 0.08em;
-  color: var(--fg-faint);
-}
-
-.trip-progress {
-  grid-column: 2 / 3;
-  grid-row: 1 / 3;
-  display: grid;
-  place-items: center;
-  gap: 8px;
-  align-self: center;
-}
-
-.trip-donut {
-  position: relative;
-  width: 112px;
-  height: 112px;
-}
-
-.trip-ring {
-  width: 112px;
-  height: 112px;
-  display: block;
-  transform: rotate(-90deg);
-}
-
-.trip-ring-track,
-.trip-ring-fill {
-  fill: none;
-  stroke-width: 10;
-}
-
-.trip-ring-track {
-  stroke: var(--bg-quiet);
-}
-
-.trip-ring-fill {
-  stroke: var(--accent);
-  stroke-linecap: round;
-  stroke-dasharray: 0 100;
-}
-
-.trip-goal {
-  position: absolute;
-  inset: 28px;
-  display: grid;
-  place-items: center;
-  color: var(--fg);
-}
-
-.trip-goal svg {
-  width: 52px;
-  height: 52px;
-  display: block;
-}
-
-.trip-cmp {
-  margin: 0;
-  width: 132px;
-  font-size: 11.5px;
-  color: var(--fg-muted);
-  text-align: center;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-@media (max-width: 720px) {
-  .trip-card {
-    grid-template-columns: 1fr;
-  }
-
-  .trip-progress {
-    grid-column: 1 / 2;
-    grid-row: auto;
-    justify-self: start;
-  }
-}
-
-/* ---------- 分析タブのセクション ---------------------------
-   - グレー罫線を撤去 (「並べたカード」感を解消)
-   - 背景は bg-soft のみで、コンテンツの存在感はタイポと余白で表現
-   - セクション見出しは下罫線無し。タイトルとサブを近づけて簡素に */
-.analytics-section {
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-  padding: 16px 18px 18px;
-  background: color-mix(in srgb, var(--bg) 84%, transparent);
-  border: 1px solid var(--border);
-  box-shadow: none;
-  border-radius: var(--radius-md);
-  min-width: 0;
-  backdrop-filter: blur(10px);
-}
-
-.section-head {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.section-icon {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 16px;
-  height: 16px;
-  color: var(--accent);
-  flex: none;
-}
-
-.section-icon svg { width: 15px; height: 15px; }
-
-.section-title { line-height: 1.2; }
-
-.section-title {
-  font-size: 13.5px;
-  font-weight: 600;
-  color: var(--fg);
-}
-
-.section-sub {
+.cr-strip-cell .val .u {
   font-size: 11px;
   color: var(--fg-faint);
 }
 
-/* ---------- Hour rhythm chart -----------------------------
-   よくある 24 セルのヒートマップではなく、時間帯ごとの山を見せる
-   小さな縦棒チャート。ピーク帯が一目で分かるようにする。 */
-.hour-heatmap {
-  min-width: 0;
-  font-variant-numeric: tabular-nums;
+.cr-strip-cell .ctx {
+  font-size: 10.5px;
+  color: var(--fg-muted);
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
-.hour-heatmap .hh-chart {
+.cr-strip-cell .ctx .mini {
+  flex: 1;
+  height: 3px;
+  background: var(--border);
+  border-radius: 2px;
+  overflow: hidden;
+  max-width: 140px;
+}
+
+.cr-strip-cell .ctx .mini span {
+  display: block;
+  height: 100%;
+  width: 0;
+  background: var(--accent);
+  border-radius: 2px;
+  transition: width 760ms cubic-bezier(0.16, 1, 0.3, 1) var(--delay, 0ms);
+}
+
+/* マウス系: アイコン色 + mini-bar 色をオレンジへ。 */
+.cr-strip-cell.is-mouse .lbl svg { color: var(--accent-mouse); }
+.cr-strip-cell.is-mouse .ctx .mini span { background: var(--accent-mouse); }
+
+/* ---------- Hour histogram (24h, 本日 + 7日平均overlay) ---------- */
+.cr-hours {
+  padding: 24px 24px 8px;
+}
+
+.cr-hours-h {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+
+.cr-hours-h .lbl {
+  font-size: 10.5px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--fg-faint);
+  font-weight: 600;
+}
+
+.cr-hours-h .ctx {
+  font-size: 11px;
+  color: var(--fg-muted);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.cr-hours-h .swatch {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+  background: var(--accent);
+  margin: 0 4px -1px;
+}
+
+.cr-hours-h .swatch.is-avg {
+  background: var(--accent);
+  opacity: 0.20;
+}
+
+/* 24 列のグリッド。本日バー + 7日平均バーをセル内で重ねる。 */
+.cr-hours-cells {
   display: grid;
   grid-template-columns: repeat(24, 1fr);
-  gap: 5px;
+  gap: 4px;
   align-items: end;
-  min-height: 104px;
-  padding: 10px 4px 0;
-  border-radius: var(--radius-md);
-  background: var(--bg-soft);
-  border: 1px solid var(--border);
+  height: 64px;
+  position: relative;
 }
 
-.hour-heatmap .hh-cell {
-  height: 96px;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-end;
-  align-items: stretch;
-  gap: 6px;
-  background: transparent;
-  border: 0;
-  padding: 0;
-  color: var(--fg-faint);
-  cursor: default;
+.cr-hour-cell {
+  position: relative;
+  height: 100%;
 }
 
-.hour-heatmap .hh-bar {
-  display: block;
-  width: 100%;
-  height: var(--h);
-  min-height: 3px;
-  border-radius: 999px 999px 3px 3px;
+/* 本日のバー: 中身のあるソリッドな縦棒。下端から `--h-today` 分まで伸びる。 */
+.cr-hour-bar-today {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
   background: var(--accent);
-  box-shadow: none;
+  border-radius: 2px 2px 1px 1px;
+  height: var(--h-today, 0%);
+  z-index: 1;
+  transition: height 760ms cubic-bezier(0.16, 1, 0.3, 1) var(--delay, 0ms);
 }
 
-.hour-heatmap .hh-chart[data-empty="true"] .hh-bar {
-  background: var(--cell-0);
-  box-shadow: none;
-  opacity: 0.55;
+/* 7 日平均バー: today バーの裏に薄く敷くゴーストバー (単一)。
+   today >= avg のときは today に完全に隠れるが、それでよい
+   (ユーザーフィードバック: マーカー線がはみ出すのを嫌った)。
+   today < avg のときは avg の頭が today の上に出るので、平均がそこに
+   あることがそれとなく分かる。 */
+.cr-hour-bar-avg {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: var(--h-avg, 0%);
+  background: var(--accent);
+  opacity: 0.22;
+  border-radius: 2px;
+  pointer-events: none;
+  transition: height 760ms cubic-bezier(0.16, 1, 0.3, 1) var(--delay, 0ms);
 }
 
-.hour-heatmap .hh-label {
-  height: 12px;
-  font-size: 9.5px;
-  line-height: 12px;
-  text-align: center;
+/* h-avg が 0 のときは要素自体を消す (極小値の 1px が下端に残るのを防ぐ) */
+.cr-hour-bar-avg[data-has-avg="false"] { display: none; }
+
+.cr-hours-baseline {
+  position: relative;
+  height: 1px;
+  background: var(--border);
+  margin-top: 1px;
+}
+
+.cr-hours-axis {
+  display: flex;
+  justify-content: space-between;
+  padding: 6px 0 0;
+  font-size: 9px;
   color: var(--fg-faint);
 }
 
-.hour-heatmap .hh-cell:hover {
-  color: var(--fg-muted);
-}
-
-.hour-heatmap .hh-cell:hover .hh-bar { filter: brightness(1.06); }
-
-/* ---------- Breakdown bars -------------------------------- */
-.analytics-row {
+/* ---------- Bottom split (top keys + mouse breakdown) ---------- */
+.cr-bottom {
   display: grid;
-  grid-template-columns: 1.4fr 1fr;
-  gap: 22px;
-  align-items: start;
+  grid-template-columns: 1fr 1fr;
+  gap: 28px;
+  padding: 14px 24px 18px;
 }
 
-.breakdown-bars {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  padding: 4px 2px 2px;
+.cr-panel {
   min-width: 0;
 }
 
-.breakdown-empty {
+.cr-panel-h {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+  font-size: 10.5px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--fg-faint);
+  font-weight: 600;
+}
+
+.cr-panel-h .ttl {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.cr-panel-h .ttl svg {
+  width: 11px;
+  height: 11px;
+  opacity: 0.85;
+}
+
+.cr-panel-h .sub {
+  font-weight: 400;
+  color: var(--fg-faint);
+  text-transform: none;
+  letter-spacing: 0;
+  font-size: 11px;
+}
+
+/* よく使うキー: 2 列グリッド。狭いビューでは 1 列にして
+   バーが潰れて見えなくなる事故を防ぐ。 */
+.cr-keys-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px 32px;
+}
+
+@media (max-width: 960px) {
+  .cr-keys-grid { grid-template-columns: 1fr; }
+}
+
+.cr-keyrow {
+  display: grid;
+  grid-template-columns: 48px minmax(60px, 1fr) 56px;
+  gap: 12px;
+  align-items: center;
+  padding: 5px 0;
   font-size: 12px;
+  min-width: 0;
+}
+
+.cr-keyrow .k {
+  font-family: "Consolas", "IBM Plex Mono", "Menlo", monospace;
+  font-size: 11px;
+  font-weight: 500;
+  padding: 2px 6px;
+  border: 1px solid var(--border-strong);
+  border-radius: 4px;
+  text-align: center;
+  background: var(--bg);
+  color: var(--fg);
+  box-shadow: 0 1px 0 var(--border-strong);
+  min-width: 36px;
+  max-width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* バーの track: 薄い罫線色をベースに、視認性のための内側影で
+   「溝」感を出す。fill が 0% でも track が必ず見えるようにする。 */
+.cr-keyrow .bar {
+  height: 6px;
+  background: var(--border);
+  border-radius: 999px;
+  overflow: hidden;
+  min-width: 24px;
+}
+
+.cr-keyrow .bar span {
+  display: block;
+  height: 100%;
+  width: 0;
+  background: var(--accent);
+  border-radius: inherit;
+  transition: width 760ms cubic-bezier(0.16, 1, 0.3, 1) var(--delay, 0ms);
+}
+
+.cr-keyrow .n {
+  text-align: right;
+  font-size: 11.5px;
+  color: var(--fg-muted);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* マウス内訳行 (左クリック/右クリック/中クリック/スクロール)。
+   ラベルが日本語のテキストになるので、キーコード用の枠は使わない。 */
+.cr-mouserow {
+  display: grid;
+  grid-template-columns: 88px minmax(60px, 1fr) 56px;
+  gap: 12px;
+  align-items: center;
+  padding: 5px 0;
+  font-size: 12px;
+  min-width: 0;
+}
+
+.cr-mouserow .lbl {
+  color: var(--fg);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cr-mouserow .bar {
+  height: 6px;
+  background: var(--border);
+  border-radius: 999px;
+  overflow: hidden;
+  min-width: 24px;
+}
+
+.cr-mouserow .bar span {
+  display: block;
+  height: 100%;
+  width: 0;
+  background: var(--accent-mouse);
+  border-radius: inherit;
+  transition: width 760ms cubic-bezier(0.16, 1, 0.3, 1) var(--delay, 0ms);
+}
+
+.cr-mouserow .n {
+  text-align: right;
+  font-size: 11.5px;
+  color: var(--fg-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+/* マウスパネル: タイトル左の小アイコンをオレンジへ。 */
+.cr-panel.is-mouse .cr-panel-h .ttl svg { color: var(--accent-mouse); }
+
+/* 空状態 (まだデータがない) */
+.cr-empty {
+  font-size: 12px;
+  color: var(--fg-faint);
   padding: 8px 0;
 }
 
-.br-row {
-  display: grid;
-  grid-template-columns: 72px 1fr 64px;
-  align-items: center;
-  gap: 8px;
-  font-size: 12px;
-  font-variant-numeric: tabular-nums;
-  padding: 2px 0;
-}
-
-.br-label {
-  color: var(--fg-muted);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.br-track {
-  display: block;
-  height: 8px;
-  background: var(--bg-quiet);
-  border-radius: 999px;
-  overflow: hidden;
-  position: relative;
-}
-
-.br-fill {
-  display: block;
-  height: 100%;
-  background: var(--accent);
-  border-radius: inherit;
-}
-
-.br-num {
-  text-align: right;
-  color: var(--fg);
-  font-weight: 500;
+/* レイアウト崩れ防止: 小窓幅では 1 列スタックに。 */
+@media (max-width: 720px) {
+  .cr-hero { grid-template-columns: 1fr; gap: 18px; }
+  .cr-strip { grid-template-columns: 1fr; }
+  .cr-strip-cell { border-right: 0; border-bottom: 1px solid var(--border); }
+  .cr-strip-cell:last-child { border-bottom: 0; }
+  .cr-bottom { grid-template-columns: 1fr; }
+  .cr-keys-grid { grid-template-columns: 1fr; }
 }
 
 /* =========================================================
-   List view
-   ========================================================= */
+   List view (Clack Refinement design)
+   =========================================================
+   5 列レイアウト:
+     [日付 + 曜日] [キーバー] [キー数] [マウスバー] [マウス数]
+   月境界で見出し行 + サブ合計を挿入。本日行はアクセント色で強調、
+   週末曜日は #d97706 (オレンジ) で色付け。 */
+
+.view {
+  /* hidden 属性で非表示にした view が grid/flex の影響でレイアウトに残らないよう
+     強制的に display:none。 */
+}
+.view[hidden] { display: none !important; }
+
 .view-list {
   display: flex;
   flex-direction: column;
+  /* 行の区切り線が card 端まで届くよう body の左右 padding を打ち消す。
+     内側で 24px の padding を再付与してコンテンツ位置を揃える。 */
+  margin: 0 -24px;
 }
 
-.view[hidden] {
-  display: none !important;
+.view-list .cr-subhead { padding: 0 24px; }
+
+.cr-list {
+  display: flex;
+  flex-direction: column;
+  font-variant-numeric: tabular-nums;
 }
 
-.list-head {
+.cr-list-head,
+.cr-list-row {
   display: grid;
-  grid-template-columns: 1fr 100px 100px;
-  font-size: 10.5px;
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-  color: var(--fg-faint);
-  padding: 6px 10px;
-  border-bottom: 1px solid var(--border);
+  grid-template-columns: 132px minmax(48px, 1fr) 96px minmax(48px, 1fr) 96px;
+  gap: 20px;
+  padding: 9px 24px;
+  align-items: center;
 }
 
-.list-head .num-col {
+.cr-list-head {
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--fg-faint);
+  font-weight: 600;
+  border-bottom: 1px solid var(--border);
+  padding-top: 10px;
+  padding-bottom: 8px;
+}
+
+.cr-list-head .col-num {
   text-align: right;
 }
 
-.list-body {
+/* 月見出し行: "2026年5月 ・ N 日 ・ キー X ・ マウス Y" */
+.cr-list-month {
   display: flex;
-  flex-direction: column;
-  max-height: 340px;
-  overflow-y: auto;
-}
-
-.list-row {
-  display: grid;
-  grid-template-columns: 1fr 100px 100px;
-  font-variant-numeric: tabular-nums;
-  padding: 9px 10px;
-  font-size: 13px;
+  justify-content: space-between;
+  align-items: baseline;
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--fg-faint);
+  font-weight: 600;
+  padding: 14px 24px 6px;
   border-bottom: 1px solid var(--border);
+  background: color-mix(in srgb, var(--bg-soft) 50%, transparent);
+}
+
+.cr-list-month .tot {
+  color: var(--fg-muted);
+  font-weight: 500;
+  font-size: 10.5px;
+  text-transform: none;
+  letter-spacing: 0.03em;
+  font-variant-numeric: tabular-nums;
+}
+
+.cr-list-row {
+  border-bottom: 1px solid var(--border);
+  font-size: 13px;
   color: var(--fg);
+  transition: background 120ms ease;
 }
 
-.list-row:last-child {
-  border-bottom: 0;
+.cr-list-row:hover {
+  background: var(--bg-hover);
 }
 
-.list-row .num {
+.cr-list-row.is-today {
+  background: var(--accent-soft);
+}
+
+.cr-list-row.is-today .day {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.cr-list-row .date {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.cr-list-row .day { color: var(--fg); }
+
+.cr-list-row .dow {
+  font-size: 11px;
+  color: var(--fg-faint);
+}
+
+.cr-list-row .dow.is-weekend {
+  color: #d97706;
+  opacity: 0.9;
+}
+
+.cr-list-row .badge {
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 1px 6px;
+  background: var(--accent);
+  color: var(--accent-fg);
+  border-radius: 999px;
+  margin-left: 2px;
+}
+
+.cr-list-row .bar {
+  height: 5px;
+  background: var(--border);
+  border-radius: 999px;
+  overflow: hidden;
+  min-width: 24px;
+}
+
+.cr-list-row .bar span {
+  display: block;
+  height: 100%;
+  width: 0;
+  background: var(--accent);
+  border-radius: inherit;
+  transition: width 600ms cubic-bezier(0.16, 1, 0.3, 1) var(--delay, 0ms);
+}
+
+.cr-list-row .bar.is-mouse span {
+  background: var(--accent-mouse);
+}
+
+.cr-list-row .num {
   text-align: right;
   color: var(--fg);
   font-weight: 500;
+  font-variant-numeric: tabular-nums;
+}
+
+.cr-list-row .num.zero {
+  color: var(--fg-faint);
+  font-weight: 400;
+}
+
+.cr-list-empty {
+  padding: 30px 24px;
+  text-align: center;
+  font-size: 12px;
+  color: var(--fg-faint);
+}
+
+@media (max-width: 720px) {
+  .cr-list-head, .cr-list-row {
+    grid-template-columns: 100px 1fr 72px;
+    gap: 12px;
+  }
+  /* 狭い時はマウスバー列を隠す (キーバーだけ表示) */
+  .cr-list-head > :nth-child(4),
+  .cr-list-head > :nth-child(5),
+  .cr-list-row .bar.is-mouse,
+  .cr-list-row .num:last-child { display: none; }
 }
 
 /* =========================================================
@@ -1181,7 +1556,7 @@ hr {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 16px 0 0;
+  padding: 14px 24px;
   border-top: 1px solid var(--border);
   margin-top: 8px;
   font-size: 12px;
@@ -1477,4 +1852,23 @@ hr {
 @keyframes toast-in {
   from { opacity: 0; transform: translate(-50%, 8px); }
   to   { opacity: 1; transform: translate(-50%, 0); }
+}
+
+/* =========================================================
+   Reduced motion
+   =========================================================
+   OS のアクセシビリティ設定で「視覚効果を減らす」が ON のときは、
+   分析タブのバー類や線描画アニメーションを止めて即時表示にする。 */
+@media (prefers-reduced-motion: reduce) {
+  .cr-hour-bar-avg,
+  .cr-hour-bar-today,
+  .cr-strip-cell .ctx .mini span,
+  .cr-keyrow .bar span,
+  .cr-mouserow .bar span,
+  .cr-list-row .bar span,
+  .cr-kpi-spark .line,
+  .cr-kpi-spark .area,
+  .cr-kpi-spark .dot {
+    transition: none !important;
+  }
 }

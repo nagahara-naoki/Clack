@@ -29,7 +29,11 @@ pub fn request_input_monitoring() {
     }
 }
 
+/// macOS 以外では入力フックに OS 側の許可が要らないため、常に許可扱い。
+/// クロスプラットフォーム呼び出しの対称性のために残しているが、Windows
+/// ビルドでは内部から呼ばれない (dead_code 警告を抑止)。
 #[cfg(not(target_os = "macos"))]
+#[allow(dead_code)]
 pub fn has_input_monitoring() -> bool {
     true
 }

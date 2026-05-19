@@ -17,6 +17,12 @@ impl From<HookError> for ListenError {
     }
 }
 
+// 可変 static への `&mut` は Rust 2024 で static_mut_refs 警告対象だが、
+// この `raw_callback` は OS のローレベル入力フックスレッドからのみ呼ばれ、
+// 他経路から GLOBAL_CALLBACK にアクセスする箇所が存在しない (set/get は
+// この関数の呼び出し前に listen() が一度だけ書き込む)。安全性は構造的に
+// 保証されているので警告だけを抑止する。
+#[allow(static_mut_refs)]
 unsafe extern "system" fn raw_callback(code: c_int, param: WPARAM, lpdata: LPARAM) -> LRESULT {
     if code == HC_ACTION {
         let opt = convert(param, lpdata);

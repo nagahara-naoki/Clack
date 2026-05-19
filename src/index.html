@@ -84,167 +84,270 @@
         <hr class="divider" />
 
         <section id="view-cal" class="view view-cal">
-          <div class="cal-head">
-            <div class="cal-title" id="cal-title">—</div>
-            <div class="cal-head-right">
-              <div class="period-slider" role="group" aria-label="Period">
-                <div class="period-ticks">
-                  <span data-pos="0" data-i18n="period_1m">1ヶ月</span>
-                  <span data-pos="1" data-i18n="period_3m">3ヶ月</span>
-                  <span data-pos="2" class="is-active" data-i18n="period_6m">6ヶ月</span>
-                  <span data-pos="3" data-i18n="period_12m">12ヶ月</span>
-                </div>
-                <input type="range" id="period-range" min="0" max="3" step="1" value="2" aria-label="Period length" />
-              </div>
-              <div class="cal-nav">
-                <button id="cal-prev" class="icon-btn" aria-label="Previous">
-                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 6l-6 6 6 6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" /></svg>
-                </button>
-                <button id="cal-next" class="icon-btn" aria-label="Next">
-                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" /></svg>
-                </button>
-              </div>
+          <!-- Sub-header: 本日の日付 + 期間スイッチ (1/3/6/12ヶ月) ---------- -->
+          <div class="cr-subhead">
+            <div class="cr-date">
+              <span class="today" data-i18n="today">本日</span>
+              <span id="cal-date-str">—</span>
+            </div>
+            <div class="cr-range" role="radiogroup" aria-label="Period">
+              <button data-pos="0" role="radio" data-i18n="period_1m">1ヶ月</button>
+              <button data-pos="1" role="radio" data-i18n="period_3m">3ヶ月</button>
+              <button data-pos="2" role="radio" data-i18n="period_6m">6ヶ月</button>
+              <button data-pos="3" class="is-active" role="radio" aria-checked="true" data-i18n="period_12m">12ヶ月</button>
             </div>
           </div>
-          <div class="cal-grid">
-            <div class="cal-months-row" id="cal-months"></div>
-            <div class="cal-body">
-              <div class="cal-dow" id="cal-dow"></div>
-              <div class="cal-weeks" id="cal-weeks"></div>
+
+          <div class="cr-cal">
+            <!-- 大見出し: 期間 + アクティブ日数 + ナビ + 凡例 ---------- -->
+            <div class="cr-cal-h">
+              <div class="title">
+                <b id="cal-title">—</b>
+                <span class="muted" id="cal-active"></span>
+              </div>
+              <div class="controls">
+                <div class="nav">
+                  <button id="cal-prev" class="icon-btn" aria-label="Previous">
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 6l-6 6 6 6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" /></svg>
+                  </button>
+                  <button id="cal-next" class="icon-btn" aria-label="Next">
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" /></svg>
+                  </button>
+                </div>
+                <div class="legend">
+                  <span data-i18n="less">少</span>
+                  <span class="scale" aria-hidden="true">
+                    <span data-l="0"></span>
+                    <span data-l="1"></span>
+                    <span data-l="2"></span>
+                    <span data-l="3"></span>
+                    <span data-l="4"></span>
+                  </span>
+                  <span data-i18n="more">多</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- ヒートマップ本体 (既存の cal-grid 構造を維持) ---------- -->
+            <div class="cal-grid">
+              <div class="cal-months-row" id="cal-months"></div>
+              <div class="cal-body">
+                <div class="cal-dow" id="cal-dow"></div>
+                <div class="cal-weeks" id="cal-weeks"></div>
+              </div>
+            </div>
+
+            <!-- Foot: 日次合計 sparkline + 期間合計 (キー/マウス) -------- -->
+            <div class="cr-cal-foot">
+              <div class="sparkbox">
+                <div class="sparkbox-h">
+                  <span id="cal-daily-label" data-i18n="cal_daily_label">日次合計</span>
+                  <span id="cal-daily-max" class="muted">—</span>
+                </div>
+                <svg id="cal-daily-spark" class="cal-daily-spark" viewBox="0 0 365 26" preserveAspectRatio="none" aria-hidden="true"></svg>
+              </div>
+              <div class="totals">
+                <div class="h" data-i18n="cal_period_totals">期間合計</div>
+                <div class="row">
+                  <span class="lbl" data-i18n="keys">キー</span>
+                  <span class="n" id="cal-total-keys">0</span>
+                </div>
+                <div class="row">
+                  <span class="lbl" data-i18n="mouse">マウス</span>
+                  <span class="n" id="cal-total-mouse">0</span>
+                </div>
+              </div>
             </div>
           </div>
         </section>
 
         <section id="view-analytics" class="view view-analytics" hidden>
-          <div class="analytics-scope">
-            <div class="seg" role="radiogroup" aria-label="Scope">
-              <button class="seg-btn" data-scope="today" role="radio" data-i18n="scope_today">今日</button>
-              <button class="seg-btn" data-scope="week" role="radio" data-i18n="scope_week">7日</button>
-              <button class="seg-btn" data-scope="month" role="radio" data-i18n="scope_month">今月</button>
-              <button class="seg-btn is-active" data-scope="all" role="radio" aria-checked="true" data-i18n="scope_all">全期間</button>
+          <!-- 1. Sub-header: 日付 + 期間スイッチ ------------------------- -->
+          <div class="cr-subhead">
+            <div class="cr-date">
+              <span class="today" data-i18n="today">本日</span>
+              <span id="cr-date-str">—</span>
+              <span class="clock" id="cr-clock-str"></span>
+            </div>
+            <div class="cr-range" role="radiogroup" aria-label="Scope">
+              <button data-scope="today" role="radio" data-i18n="scope_today">今日</button>
+              <button data-scope="week" role="radio" data-i18n="scope_week">7日</button>
+              <button data-scope="month" role="radio" data-i18n="scope_month">今月</button>
+              <button data-scope="all" class="is-active" role="radio" aria-checked="true" data-i18n="scope_all">全期間</button>
             </div>
           </div>
 
-          <div class="kpi-row">
-            <div class="kpi">
-              <div class="kpi-label">
-                <span class="kpi-icon" aria-hidden="true">
-                  <svg viewBox="0 0 24 24">
-                    <path d="M4 18h16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" />
-                    <path d="M7 18V9m5 9V6m5 12v-7" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" />
-                  </svg>
+          <!-- 2. Hero: 2 列 KPI (キー / マウス) + 14 日スパークライン ----- -->
+          <div class="cr-hero">
+            <div class="cr-kpi">
+              <div class="cr-kpi-h">
+                <span class="ico" aria-hidden="true">
+                  <svg viewBox="0 0 24 24"><rect x="2.5" y="6.5" width="19" height="11" rx="2" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M7 10v0M10 10v0M13 10v0M16 10v0M19 10v0M7.5 14h9" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
                 </span>
+                <span data-i18n="keys">キー</span>
+              </div>
+              <div class="cr-kpi-row">
+                <div class="cr-kpi-n" id="hero-keys-num">0</div>
+                <div class="cr-kpi-u">strokes</div>
+                <div class="cr-kpi-delta">
+                  <span><span data-i18n="hero_avg7_label">7日平均</span> <b id="hero-keys-avg7">0</b></span>
+                  <span id="hero-keys-delta" class="muted">—</span>
+                </div>
+              </div>
+              <svg id="hero-keys-spark" class="cr-kpi-spark" viewBox="0 0 100 24" preserveAspectRatio="none" aria-hidden="true">
+                <defs>
+                  <linearGradient id="cr-spark-grad-keys" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stop-color="currentColor" stop-opacity="0.22"></stop>
+                    <stop offset="100%" stop-color="currentColor" stop-opacity="0"></stop>
+                  </linearGradient>
+                </defs>
+                <path class="area" d="M 0 24 L 100 24 Z" fill="url(#cr-spark-grad-keys)"></path>
+                <path class="line" d="M 0 24"></path>
+                <circle class="dot" cx="0" cy="24" r="1.6"></circle>
+              </svg>
+            </div>
+
+            <div class="cr-kpi is-mouse">
+              <div class="cr-kpi-h">
+                <span class="ico" aria-hidden="true">
+                  <svg viewBox="0 0 24 24"><rect x="6.5" y="3" width="11" height="18" rx="5.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 7v3.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+                </span>
+                <span data-i18n="mouse">マウス</span>
+              </div>
+              <div class="cr-kpi-row">
+                <div class="cr-kpi-n" id="hero-mouse-num">0</div>
+                <div class="cr-kpi-u">clicks</div>
+                <div class="cr-kpi-delta">
+                  <span><span data-i18n="hero_avg7_label">7日平均</span> <b id="hero-mouse-avg7">0</b></span>
+                  <span id="hero-mouse-delta" class="muted">—</span>
+                </div>
+              </div>
+              <svg id="hero-mouse-spark" class="cr-kpi-spark" viewBox="0 0 100 24" preserveAspectRatio="none" aria-hidden="true">
+                <defs>
+                  <linearGradient id="cr-spark-grad-mouse" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stop-color="currentColor" stop-opacity="0.22"></stop>
+                    <stop offset="100%" stop-color="currentColor" stop-opacity="0"></stop>
+                  </linearGradient>
+                </defs>
+                <path class="area" d="M 0 24 L 100 24 Z" fill="url(#cr-spark-grad-mouse)"></path>
+                <path class="line" d="M 0 24"></path>
+                <circle class="dot" cx="0" cy="24" r="1.6"></circle>
+              </svg>
+            </div>
+          </div>
+
+          <!-- 3. Stat strip: 3 連 (1日平均 / マウス距離 / スクロール高) ----- -->
+          <div class="cr-strip">
+            <div class="cr-strip-cell">
+              <div class="lbl">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M12 7v5l3 2" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
                 <span data-i18n="kpi_average">1日平均</span>
               </div>
-              <div class="kpi-value"><b id="kpi-average-num">0</b><span class="kpi-unit" data-i18n="kpi_average_unit">操作</span></div>
+              <div class="val">
+                <span class="n" id="kpi-average-num">0</span>
+                <span class="u" data-i18n="kpi_average_unit_long">操作 / 日</span>
+              </div>
+              <div class="ctx" data-i18n="kpi_average_ctx">過去 7 日の平均値</div>
+            </div>
+
+            <div class="cr-strip-cell is-mouse">
+              <div class="lbl">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 21l3-6 4-2 3 5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M10 9l4-2 2.5 4.5L20 10" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><circle cx="14" cy="4.5" r="1.4" fill="currentColor"/></svg>
+                <span data-i18n="trip_mouse_label">マウスで歩いた距離</span>
+              </div>
+              <div class="val">
+                <span class="n" id="trip-mouse-num">0</span>
+                <span class="u" id="trip-mouse-unit">m</span>
+              </div>
+              <div class="ctx">
+                <span id="trip-mouse-goal">—</span>
+                <span class="mini"><span id="trip-mouse-fill"></span></span>
+                <span id="trip-mouse-pct">—</span>
+              </div>
+            </div>
+
+            <div class="cr-strip-cell">
+              <div class="lbl">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 19l5-8 4 6 3-4 6 6z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><circle cx="17" cy="6" r="1.2" fill="currentColor"/></svg>
+                <span data-i18n="trip_scroll_label">スクロールで上った高さ</span>
+              </div>
+              <div class="val">
+                <span class="n" id="trip-scroll-num">0</span>
+                <span class="u" id="trip-scroll-unit">m</span>
+              </div>
+              <div class="ctx">
+                <span id="trip-scroll-goal">—</span>
+                <span class="mini"><span id="trip-scroll-fill"></span></span>
+                <span id="trip-scroll-pct">—</span>
+              </div>
             </div>
           </div>
 
-          <div class="trip-row">
-            <article class="trip-card">
-              <div class="trip-head">
-                <span class="trip-icon" aria-hidden="true">
-                  <svg viewBox="0 0 24 24">
-                    <circle cx="4" cy="12" r="1.6" fill="currentColor" />
-                    <path d="M5.5 12h12.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-dasharray="2.4 2.6" />
-                    <path d="M16 8l4 4-4 4" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
-                  </svg>
-                </span>
-                <span class="trip-label" data-i18n="trip_mouse_label">マウスで歩いた距離</span>
+          <!-- 4. 時間帯ヒストグラム (本日 + 7日平均overlay) --------------- -->
+          <div class="cr-hours">
+            <div class="cr-hours-h">
+              <div class="lbl" data-i18n="anal_hours_title">時間帯 · 24時間</div>
+              <div class="ctx">
+                <span data-i18n="hours_today_label">本日</span>
+                <span class="swatch" aria-hidden="true"></span>
+                ・
+                <span data-i18n="hours_avg7_label">7日平均</span>
+                <span class="swatch is-avg" aria-hidden="true"></span>
               </div>
-              <div class="trip-value">
-                <b class="trip-num" id="trip-mouse-num">0</b>
-                <span class="trip-unit" id="trip-mouse-unit">m</span>
-              </div>
-              <div class="trip-progress">
-                <div class="trip-donut" aria-hidden="true">
-                  <svg class="trip-ring" viewBox="0 0 120 120">
-                    <circle class="trip-ring-track" cx="60" cy="60" r="50" pathLength="100"></circle>
-                    <circle class="trip-ring-fill" id="trip-mouse-ring" cx="60" cy="60" r="50" pathLength="100"></circle>
-                  </svg>
-                  <div class="trip-goal" id="trip-mouse-goal"></div>
-                </div>
-                <p class="trip-cmp" id="trip-mouse-cmp">—</p>
-              </div>
-            </article>
-
-            <article class="trip-card">
-              <div class="trip-head">
-                <span class="trip-icon" aria-hidden="true">
-                  <svg viewBox="0 0 24 24">
-                    <path d="M3 20l5-9 4 6 3-4 6 7H3z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round" />
-                  </svg>
-                </span>
-                <span class="trip-label" data-i18n="trip_scroll_label">スクロールで上った高さ</span>
-              </div>
-              <div class="trip-value">
-                <b class="trip-num" id="trip-scroll-num">0</b>
-                <span class="trip-unit" id="trip-scroll-unit">m</span>
-              </div>
-              <div class="trip-progress">
-                <div class="trip-donut" aria-hidden="true">
-                  <svg class="trip-ring" viewBox="0 0 120 120">
-                    <circle class="trip-ring-track" cx="60" cy="60" r="50" pathLength="100"></circle>
-                    <circle class="trip-ring-fill" id="trip-scroll-ring" cx="60" cy="60" r="50" pathLength="100"></circle>
-                  </svg>
-                  <div class="trip-goal" id="trip-scroll-goal"></div>
-                </div>
-                <p class="trip-cmp" id="trip-scroll-cmp">—</p>
-              </div>
-            </article>
+            </div>
+            <div class="cr-hours-cells" id="hours-cells" role="row" aria-label="Activity by hour"></div>
+            <div class="cr-hours-baseline" aria-hidden="true"></div>
+            <div class="cr-hours-axis">
+              <span>0</span><span>3</span><span>6</span><span>9</span><span>12</span><span>15</span><span>18</span><span>21</span><span>24</span>
+            </div>
           </div>
 
-          <div class="analytics-section">
-            <div class="section-head">
-              <span class="section-icon" aria-hidden="true">
-                <svg viewBox="0 0 24 24">
-                  <circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.7" />
-                  <path d="M12 7v5l3 2" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" />
-                </svg>
-              </span>
-              <div class="section-title" data-i18n="anal_hour_title">時間帯</div>
-              <div class="section-sub" data-i18n="anal_hour_sub">0〜23 時の活動量</div>
+          <!-- 5. Bottom split: よく使うキー + マウス内訳 ------------------ -->
+          <div class="cr-bottom">
+            <div class="cr-panel">
+              <div class="cr-panel-h">
+                <span class="ttl">
+                  <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="2.5" y="6.5" width="19" height="11" rx="2" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M7 10v0M10 10v0M13 10v0M16 10v0M19 10v0M7.5 14h9" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+                  <span data-i18n="anal_keys_title">よく使うキー</span>
+                </span>
+                <span class="sub" data-i18n="anal_keys_sub">入力回数の多い順 · 全期間</span>
+              </div>
+              <div class="cr-keys-grid" id="keys-breakdown"></div>
             </div>
-            <div id="hour-heatmap" class="hour-heatmap" role="row" aria-label="Activity by hour"></div>
-          </div>
 
-          <div class="analytics-row">
-            <div class="analytics-section">
-              <div class="section-head">
-                <span class="section-icon" aria-hidden="true">
-                  <svg viewBox="0 0 24 24">
-                    <rect x="2.5" y="6" width="19" height="12" rx="2" fill="none" stroke="currentColor" stroke-width="1.7" />
-                    <path d="M6 10v0M9 10v0M12 10v0M15 10v0M18 10v0M7.5 14h9" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" />
-                  </svg>
+            <div class="cr-panel is-mouse">
+              <div class="cr-panel-h">
+                <span class="ttl">
+                  <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="6.5" y="3" width="11" height="18" rx="5.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 7v3.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+                  <span data-i18n="anal_mouse_title">マウス</span>
                 </span>
-                <div class="section-title" data-i18n="anal_keys_title">よく使うキー</div>
-                <div class="section-sub" data-i18n="anal_keys_sub">入力回数の多い順 (全期間)</div>
+                <span class="sub" data-i18n="anal_mouse_sub">ボタン別の内訳 · 全期間</span>
               </div>
-              <div id="keys-breakdown" class="breakdown-bars"></div>
-            </div>
-            <div class="analytics-section">
-              <div class="section-head">
-                <span class="section-icon" aria-hidden="true">
-                  <svg viewBox="0 0 24 24">
-                    <rect x="7" y="3" width="10" height="18" rx="5" fill="none" stroke="currentColor" stroke-width="1.7" />
-                    <path d="M12 7v4" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" />
-                  </svg>
-                </span>
-                <div class="section-title" data-i18n="anal_mouse_title">マウス</div>
-                <div class="section-sub" data-i18n="anal_mouse_sub">ボタン別の内訳</div>
-              </div>
-              <div id="mouse-breakdown" class="breakdown-bars"></div>
+              <div id="mouse-breakdown"></div>
             </div>
           </div>
         </section>
 
         <section id="view-list" class="view view-list" hidden>
-          <div class="list-head">
-            <span data-i18n="date">日付</span>
-            <span class="num-col" data-i18n="keys">キー</span>
-            <span class="num-col" data-i18n="mouse">マウス</span>
+          <!-- Sub-header: 本日の日付 (期間は calendar と共通なので scope 無し) -->
+          <div class="cr-subhead">
+            <div class="cr-date">
+              <span class="today" data-i18n="today">本日</span>
+              <span id="list-date-str">—</span>
+            </div>
           </div>
-          <div class="list-body" id="list-body"></div>
+
+          <div class="cr-list">
+            <!-- 5 列 grid ヘッダ: 日付 / [キーバー] / キー数 / [マウスバー] / マウス数 -->
+            <div class="cr-list-head">
+              <span class="col-date" data-i18n="date">日付</span>
+              <span></span>
+              <span class="col-num" data-i18n="keys">キー</span>
+              <span></span>
+              <span class="col-num" data-i18n="mouse">マウス</span>
+            </div>
+            <div class="cr-list-body" id="list-body"></div>
+          </div>
         </section>
       </main>
 

@@ -228,12 +228,36 @@
       paused_badge: "一時停止中",
       anal_hour_title: "時間帯",
       anal_hour_sub: "0〜23 時の活動量",
+      anal_hours_title: "時間帯 · 24時間",
+      hours_today_label: "本日",
+      hours_avg7_label: "7日平均",
+      hero_avg7_label: "7日平均",
       anal_keys_title: "よく使うキー",
-      anal_keys_sub: "入力回数の多い順 (全期間)",
+      anal_keys_sub: "入力回数の多い順 · 全期間",
       anal_mouse_title: "マウス",
-      anal_mouse_sub: "ボタン別の内訳",
+      anal_mouse_sub: "ボタン別の内訳 · 全期間",
       kpi_average: "1日平均",
       kpi_average_unit: "操作",
+      kpi_average_unit_long: "操作 / 日",
+      kpi_average_ctx: "過去 7 日の平均値",
+      /** ヒーロー右下の差分表示用フォーマッタ。
+       *  通常は "+12.3%" / "−45.6%" などサインを明示。
+       *  baseline=0 の場合や算出不能時は "—" を返す。 */
+      hero_delta: (pct) => {
+        if (!Number.isFinite(pct)) return "—";
+        const sign = pct >= 0 ? "+" : "−";
+        return `${sign}${Math.abs(pct).toFixed(1)}%`;
+      },
+      hero_now_at: (h, m) => `· ${pad2(h)}:${pad2(m)} 時点`,
+      trip_goal_to: (name) => `${name}まで`,
+      trip_goal_passed: (name) => `${name} 突破`,
+      cal_active_days: (n) => n > 0 ? `· ${fmtNum(n)} 日アクティブ` : "",
+      cal_daily_label: (months) => `日次合計 · 過去 ${months} ヶ月`,
+      cal_daily_max: (n) => `最大 ${fmtNum(n)} / 日`,
+      cal_period_totals: "期間合計",
+      list_today_badge: "今日",
+      list_month_summary: (days, keys, mouse) =>
+        `${days} 日 · キー ${fmtNum(keys)} · マウス ${fmtNum(mouse)}`,
       hourTooltip: (hour, val) =>
         `${hour}:00–${hour}:59 ・ ${val}`,
       noAnalytics: "まだデータがありません",
@@ -283,12 +307,33 @@
       paused_badge: "PAUSED",
       anal_hour_title: "Activity by hour",
       anal_hour_sub: "0–23 hours",
+      anal_hours_title: "Hour rhythm · 24h",
+      hours_today_label: "Today",
+      hours_avg7_label: "7-day avg",
+      hero_avg7_label: "7-day avg",
       anal_keys_title: "Most used keys",
-      anal_keys_sub: "Top keys by press count (all time)",
+      anal_keys_sub: "Top keys by press count · all time",
       anal_mouse_title: "Mouse",
-      anal_mouse_sub: "Per-button breakdown",
+      anal_mouse_sub: "Per-button breakdown · all time",
       kpi_average: "Daily avg",
       kpi_average_unit: "events",
+      kpi_average_unit_long: "events / day",
+      kpi_average_ctx: "Average over past 7 days",
+      hero_delta: (pct) => {
+        if (!Number.isFinite(pct)) return "—";
+        const sign = pct >= 0 ? "+" : "−";
+        return `${sign}${Math.abs(pct).toFixed(1)}%`;
+      },
+      hero_now_at: (h, m) => `· as of ${pad2(h)}:${pad2(m)}`,
+      trip_goal_to: (name) => `to ${name}`,
+      trip_goal_passed: (name) => `Passed ${name}`,
+      cal_active_days: (n) => n > 0 ? `· ${fmtNum(n)} active days` : "",
+      cal_daily_label: (months) => `Daily total · last ${months} months`,
+      cal_daily_max: (n) => `Max ${fmtNum(n)} / day`,
+      cal_period_totals: "Period total",
+      list_today_badge: "TODAY",
+      list_month_summary: (days, keys, mouse) =>
+        `${days} days · ${fmtNum(keys)} keys · ${fmtNum(mouse)} mouse`,
       hourTooltip: (hour, val) =>
         `${hour}:00–${hour}:59 · ${val}`,
       noAnalytics: "No data yet",
@@ -452,14 +497,16 @@
     }
   }
 
-  /** スライダー UI を monthsShown に同期させる。 */
+  /** 期間スイッチ (1/3/6/12ヶ月) のアクティブ状態を monthsShown に同期。
+   *  デザイン刷新でスライダー → 4 連ボタンに置き換えたため、対象セレクタも
+   *  `.cr-range button[data-pos]` に変更している。 */
   function applyPeriodSelection(months) {
     state.monthsShown = clampMonths(months);
     const pos = POS_TO_MONTHS.indexOf(state.monthsShown);
-    const range = $("period-range");
-    if (range) range.value = String(pos);
-    for (const tick of document.querySelectorAll(".period-ticks span")) {
-      tick.classList.toggle("is-active", Number(tick.dataset.pos) === pos);
+    for (const btn of document.querySelectorAll(".cr-range button[data-pos]")) {
+      const on = Number(btn.dataset.pos) === pos;
+      btn.classList.toggle("is-active", on);
+      btn.setAttribute("aria-checked", on ? "true" : "false");
     }
   }
 
@@ -512,15 +559,34 @@
   // ============================================================
 
   /** {date, keys, mouse, ...} を画面に反映。
-   *  TOP のメインカウンタ (keys / mouse / 日付) のみ更新。
-   *  アクティブ時間 / スクロール / 移動は重複表示を避けるため分析タブ側のみ。 */
+   *  - 旧 TODAY / STATS 要素 (現在は CSS で非表示) も更新しておく
+   *    (他コードが値を参照するケースの保険)
+   *  - 分析ビューのヒーロー KPI 数値を 1Hz リアルタイム更新する
+   *    (キー入力が検知されているかを画面で確認できるようにするため)。
+   *    分析タブの初回表示時に走る count-up アニメと衝突しないよう、
+   *    el._animRaf が立っている間 (アニメ中) は上書きしない。 */
   function setTodayCounts(payload) {
     if (!payload || typeof payload !== "object") return;
-    $("today-keys").textContent = fmtNum(payload.keys);
-    $("today-mouse").textContent = fmtNum(payload.mouse);
+    const keys = safeInt(payload.keys);
+    const mouse = safeInt(payload.mouse);
+
+    // 旧 TODAY 行 (非表示) も同期 (見出し系コードから参照されるかもしれないため)。
+    const tk = $("today-keys");
+    if (tk) tk.textContent = fmtNum(keys);
+    const tm = $("today-mouse");
+    if (tm) tm.textContent = fmtNum(mouse);
+
+    // 分析ヒーロー: アニメ中ならスキップ、それ以外は直更新。
+    const heroKeys = $("hero-keys-num");
+    if (heroKeys && !heroKeys._animRaf) heroKeys.textContent = fmtNum(keys);
+    const heroMouse = $("hero-mouse-num");
+    if (heroMouse && !heroMouse._animRaf) heroMouse.textContent = fmtNum(mouse);
 
     const d = parseDate(payload.date);
-    if (d) $("today-date").textContent = L().dateLabel(d);
+    if (d) {
+      const td = $("today-date");
+      if (td) td.textContent = L().dateLabel(d);
+    }
   }
 
   async function refreshToday() {
@@ -700,39 +766,147 @@
   // 11. リスト表示
   // ============================================================
 
+  /** 1 ヶ月キー "YYYY年M月" を作る。
+   *  ja: "2026年5月" / en: "May 2026" の形式で月境界の見出しに使う。 */
+  function listMonthLabel(d) {
+    const labels = L();
+    if (state.lang === "en") {
+      return `${labels.months[d.getMonth()]} ${d.getFullYear()}`;
+    }
+    return `${d.getFullYear()}年${d.getMonth() + 1}月`;
+  }
+
+  /** リスト 1 行ぶん。
+   *  日付セル (日付 + 曜日 + 「今日」バッジ) + キーバー + キー数値
+   *  + マウスバー + マウス数値 の 5 列 grid。 */
+  function buildListRow(d, todayStr, maxKeys, maxMouse) {
+    const keys = safeInt(d.keys);
+    const mouse = safeInt(d.mouse);
+    const dt = parseDate(d.date);
+
+    const row = document.createElement("div");
+    row.className = "cr-list-row";
+    if (d.date === todayStr) row.classList.add("is-today");
+
+    // ---- 日付セル ------------------------------------------------------
+    const dateCell = document.createElement("div");
+    dateCell.className = "date";
+    const day = document.createElement("span");
+    day.className = "day";
+    day.textContent = dt
+      ? `${dt.getMonth() + 1}/${pad2(dt.getDate())}`
+      : d.date;
+    const dow = document.createElement("span");
+    dow.className = "dow";
+    if (dt) {
+      const dowIdx = dt.getDay();
+      const dows = state.lang === "en"
+        ? ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
+        : ["日", "月", "火", "水", "木", "金", "土"];
+      dow.textContent = dows[dowIdx];
+      if (dowIdx === 0 || dowIdx === 6) dow.classList.add("is-weekend");
+    }
+    dateCell.append(day, dow);
+    if (d.date === todayStr) {
+      const badge = document.createElement("span");
+      badge.className = "badge";
+      badge.textContent = L().list_today_badge;
+      dateCell.appendChild(badge);
+    }
+
+    // ---- キーバー + 数値 -----------------------------------------------
+    const keysBar = document.createElement("div");
+    keysBar.className = "bar";
+    const keysFill = document.createElement("span");
+    keysFill.style.width = keys > 0 && maxKeys > 0
+      ? `${Math.max(6, Math.round((keys / maxKeys) * 100))}%`
+      : "0%";
+    keysBar.appendChild(keysFill);
+
+    const keysNum = document.createElement("div");
+    keysNum.className = keys === 0 ? "num zero" : "num";
+    keysNum.textContent = keys === 0 ? "—" : fmtNum(keys);
+
+    // ---- マウスバー + 数値 ---------------------------------------------
+    const mouseBar = document.createElement("div");
+    mouseBar.className = "bar is-mouse";
+    const mouseFill = document.createElement("span");
+    mouseFill.style.width = mouse > 0 && maxMouse > 0
+      ? `${Math.max(6, Math.round((mouse / maxMouse) * 100))}%`
+      : "0%";
+    mouseBar.appendChild(mouseFill);
+
+    const mouseNum = document.createElement("div");
+    mouseNum.className = mouse === 0 ? "num zero" : "num";
+    mouseNum.textContent = mouse === 0 ? "—" : fmtNum(mouse);
+
+    row.append(dateCell, keysBar, keysNum, mouseBar, mouseNum);
+    return row;
+  }
+
+  /** リスト全体を再構築。
+   *  月境界で見出し行を挟み、各月の日数 + 合計 (キー / マウス) を表示。
+   *  全 0 の日は今日以外スキップ。最大値は表示行 (全 0 除く) から計算する。 */
   function buildList(entries, today) {
     const body = $("list-body");
+    if (!body) return;
     body.replaceChildren();
     const todayStr = fmtDate(today);
     const sorted = [...entries].sort((a, b) => b.date.localeCompare(a.date));
-    let any = false;
-    const frag = document.createDocumentFragment();
-    for (const d of sorted) {
-      const keys = safeInt(d.keys);
-      const mouse = safeInt(d.mouse);
-      // 全 0 の日は省く (ただし今日だけは常に表示)。
-      if (keys === 0 && mouse === 0 && d.date !== todayStr) continue;
-      any = true;
-      const row = document.createElement("div");
-      row.className = "list-row";
-      const dateCell = document.createElement("span");
-      const dt = parseDate(d.date);
-      dateCell.textContent = dt ? L().listDate(dt) : d.date;
-      const keysCell = document.createElement("span");
-      keysCell.className = "num";
-      keysCell.textContent = fmtNum(keys);
-      const mouseCell = document.createElement("span");
-      mouseCell.className = "num";
-      mouseCell.textContent = fmtNum(mouse);
-      row.append(dateCell, keysCell, mouseCell);
-      frag.appendChild(row);
-    }
-    if (!any) {
+
+    // 表示対象 (キーまたはマウス > 0、または本日) のみフィルタ。
+    const visible = sorted.filter((d) => {
+      const k = safeInt(d.keys);
+      const m = safeInt(d.mouse);
+      return k > 0 || m > 0 || d.date === todayStr;
+    });
+
+    if (visible.length === 0) {
       const empty = document.createElement("div");
-      empty.style.cssText = "padding:20px;text-align:center;font-size:12px;";
-      empty.className = "muted";
+      empty.className = "cr-list-empty";
       empty.textContent = L().noData;
-      frag.appendChild(empty);
+      body.appendChild(empty);
+      return;
+    }
+
+    const maxKeys = Math.max(1, ...visible.map((d) => safeInt(d.keys)));
+    const maxMouse = Math.max(1, ...visible.map((d) => safeInt(d.mouse)));
+
+    // 表示対象を月でグループ化 (sorted は降順なので、月ヘッダも降順で出る)。
+    /** @type {Array<{ key: string, dt: Date, rows: any[] }>} */
+    const groups = [];
+    /** @type {Map<string, number>} */
+    const groupIdx = new Map();
+    for (const row of visible) {
+      const dt = parseDate(row.date);
+      if (!dt) continue;
+      const key = `${dt.getFullYear()}-${pad2(dt.getMonth() + 1)}`;
+      let idx = groupIdx.get(key);
+      if (idx === undefined) {
+        idx = groups.length;
+        groupIdx.set(key, idx);
+        groups.push({ key, dt, rows: [] });
+      }
+      groups[idx].rows.push(row);
+    }
+
+    const frag = document.createDocumentFragment();
+    for (const g of groups) {
+      // 月見出し: ラベル + 当月の日数 / キー総数 / マウス総数
+      const head = document.createElement("div");
+      head.className = "cr-list-month";
+      const label = document.createElement("span");
+      label.textContent = listMonthLabel(g.dt);
+      const tot = document.createElement("span");
+      tot.className = "tot";
+      const sumK = g.rows.reduce((a, b) => a + safeInt(b.keys), 0);
+      const sumM = g.rows.reduce((a, b) => a + safeInt(b.mouse), 0);
+      tot.textContent = L().list_month_summary(g.rows.length, sumK, sumM);
+      head.append(label, tot);
+      frag.appendChild(head);
+      for (const r of g.rows) {
+        frag.appendChild(buildListRow(r, todayStr, maxKeys, maxMouse));
+      }
     }
     body.appendChild(frag);
   }
@@ -751,8 +925,16 @@
     today.setHours(0, 0, 0, 0);
     const period = computePeriod();
 
-    // タイトル更新
-    $("cal-title").textContent = L().title(period.start, period.end);
+    // サブヘッダの日付文字列 (本日 5月19日 (火))。カレンダー / リスト 両方を更新。
+    const dateStr = L().dateLabel(today);
+    const calDate = $("cal-date-str");
+    if (calDate) calDate.textContent = dateStr;
+    const listDate = $("list-date-str");
+    if (listDate) listDate.textContent = dateStr;
+
+    // タイトル更新 (cr-cal-h のメインタイトル)
+    const titleEl = $("cal-title");
+    if (titleEl) titleEl.textContent = L().title(period.start, period.end);
 
     // 範囲データ取得
     let data;
@@ -770,6 +952,38 @@
 
     const heatmapReady = buildHeatmap(data, period, today);
     buildList(data, today);
+
+    // ---- アクティブ日数 (1 操作以上ある日の合計) ------------------------
+    let activeDays = 0;
+    let totalKeys = 0;
+    let totalMouse = 0;
+    const dailyTotals = [];
+    for (const d of data) {
+      const k = safeInt(d.keys);
+      const m = safeInt(d.mouse);
+      if (k > 0 || m > 0) activeDays += 1;
+      totalKeys += k;
+      totalMouse += m;
+      dailyTotals.push(k + m);
+    }
+    const activeEl = $("cal-active");
+    if (activeEl) activeEl.textContent = L().cal_active_days(activeDays);
+
+    // ---- 期間合計 (キー / マウス) ----------------------------------------
+    const tKeys = $("cal-total-keys");
+    const tMouse = $("cal-total-mouse");
+    if (tKeys)  animateCountUp(tKeys,  totalKeys);
+    if (tMouse) animateCountUp(tMouse, totalMouse);
+
+    // ---- 日次合計 sparkline (棒チャート) --------------------------------
+    renderDailySpark(dailyTotals);
+    const dailyLabelEl = $("cal-daily-label");
+    if (dailyLabelEl) dailyLabelEl.textContent = L().cal_daily_label(state.monthsShown);
+    const dailyMaxEl = $("cal-daily-max");
+    if (dailyMaxEl) {
+      const dmax = dailyTotals.length ? Math.max(...dailyTotals) : 0;
+      dailyMaxEl.textContent = dmax > 0 ? L().cal_daily_max(dmax) : "—";
+    }
 
     if (!heatmapReady && state.calendarRetry < 6) {
       state.calendarRetry += 1;
@@ -790,14 +1004,54 @@
     }
   }
 
+  /** 日次合計 sparkline を描画。SVG の細い棒を 1 日 1 本ずつ並べる。
+   *  最大値を 100% として高さを正規化し、視覚的な「波形」を出す。 */
+  function renderDailySpark(values) {
+    const svg = $("cal-daily-spark");
+    if (!svg) return;
+    const n = Math.max(1, values.length);
+    const max = values.length ? Math.max(...values, 1) : 1;
+    svg.setAttribute("viewBox", `0 0 ${n} 26`);
+    svg.replaceChildren();
+    const svgNs = "http://www.w3.org/2000/svg";
+    const frag = document.createDocumentFragment();
+    for (let i = 0; i < values.length; i++) {
+      const v = values[i] || 0;
+      if (v <= 0) continue;
+      const h = (v / max) * 24;
+      const rect = document.createElementNS(svgNs, "rect");
+      rect.setAttribute("x", `${i + 0.15}`);
+      rect.setAttribute("y", `${26 - h}`);
+      rect.setAttribute("width", "0.7");
+      rect.setAttribute("height", `${h}`);
+      rect.setAttribute("fill", "var(--accent)");
+      rect.setAttribute("opacity", "0.8");
+      frag.appendChild(rect);
+    }
+    // ベースラインの細い罫線
+    const line = document.createElementNS(svgNs, "line");
+    line.setAttribute("x1", "0");
+    line.setAttribute("y1", "25.5");
+    line.setAttribute("x2", String(n));
+    line.setAttribute("y2", "25.5");
+    line.setAttribute("stroke", "var(--border)");
+    line.setAttribute("stroke-width", "0.5");
+    frag.appendChild(line);
+    svg.appendChild(frag);
+  }
+
   // ============================================================
   // 13. UI ハンドラ
   // ============================================================
 
   /** カレンダー / 分析 / リスト の切替タブ。
-   *  分析タブは初回オープン時にデータをロード (起動コストの抑制)。 */
+   *  分析タブは初回オープン時にデータをロード (起動コストの抑制)。
+   *  `.card` に `is-analytics` / `is-list` クラスを付けて CSS 側で
+   *  共通 STATS 行 (キー / マウスの大きな数字) の表示を制御する。
+   *  カレンダー時のみ STATS を見せ、他ビューは各々の hero / 行内数値に任せる。 */
   function setupTabs() {
     const tabIds = ["cal", "analytics", "list"];
+    const card = document.querySelector(".card");
     const activate = (which) => {
       if (which === state.currentTab) return;
       state.currentTab = which;
@@ -812,6 +1066,10 @@
         if (view) {
           view.hidden = !on;
         }
+      }
+      if (card) {
+        card.classList.toggle("is-analytics", which === "analytics");
+        card.classList.toggle("is-list", which === "list");
       }
       if (which === "analytics") {
         refreshAnalytics().catch((e) => console.error("analytics refresh", e));
@@ -854,258 +1112,448 @@
     }
   }
 
-  /** 分析データを取得して各セクションを再描画。失敗時は noData 表示。 */
-  async function refreshAnalytics() {
-    let data;
-    try {
-      data = await invoke("get_analytics", { scope: state.analyticsScope });
-    } catch (e) {
-      console.error("get_analytics failed", e);
+  /** 数値要素を 0 → target にカウントアップ。
+   *  分析タブを開いた瞬間に「数字が伸びる」演出を全グラフと揃えるために使う。
+   *  reduced-motion の場合は瞬時に最終値を表示する。 */
+  function animateCountUp(el, target, durationMs = 900) {
+    if (!el) return;
+    const end = Math.max(0, Number.isFinite(target) ? Math.round(target) : 0);
+    const reduce = window.matchMedia &&
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (reduce || end <= 0) {
+      el.textContent = fmtNum(end);
+      el._animRaf = null;
       return;
     }
-    state.analyticsLoaded = true;
+    if (el._animRaf) cancelAnimationFrame(el._animRaf);
+    const start = performance.now();
+    const step = (now) => {
+      const t = Math.min(1, (now - start) / durationMs);
+      // ease-out-cubic
+      const e = 1 - Math.pow(1 - t, 3);
+      el.textContent = fmtNum(Math.round(end * e));
+      if (t < 1) {
+        el._animRaf = requestAnimationFrame(step);
+      } else {
+        el._animRaf = null;
+      }
+    };
+    el._animRaf = requestAnimationFrame(step);
+  }
 
-    // ---- KPI
-    $("kpi-average-num").textContent = fmtNum(data.averagePerDay);
+  /** 取得対象の日数。スパークラインと 7 日平均の計算に使う。 */
+  const HERO_RANGE_DAYS = 14;
 
-    // ---- 旅 (マウス移動距離 + スクロール累計の換算)
-    renderTrip({
-      kind: "mouse",
-      meters: safeInt(data.mouseDistancePx) / PX_PER_METER,
-      landmarks: MOUSE_LANDMARKS,
-      numEl: $("trip-mouse-num"),
-      unitEl: $("trip-mouse-unit"),
-      ringEl: $("trip-mouse-ring"),
-      goalEl: $("trip-mouse-goal"),
-      cmpEl: $("trip-mouse-cmp"),
+  /** 直近 14 日の日次集計を取得 (キー/マウスのスパークライン用)。
+   *  失敗時は 0 埋めの配列を返してフロントの描画を壊さない。 */
+  async function fetchHeroSeries() {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const start = new Date(today);
+    start.setDate(today.getDate() - (HERO_RANGE_DAYS - 1));
+    try {
+      const rows = await invoke("get_stats_range", {
+        start: fmtDate(start),
+        end: fmtDate(today),
+      });
+      if (!Array.isArray(rows) || rows.length === 0) {
+        return { keys: new Array(HERO_RANGE_DAYS).fill(0), mouse: new Array(HERO_RANGE_DAYS).fill(0) };
+      }
+      // Rust 側は範囲内全日 (歯抜けなし) を返してくる前提だが、保険として
+      // 日付キーをマップにして 14 日に必ずパディングする。
+      const byDate = new Map();
+      for (const r of rows) {
+        if (r && r.date) byDate.set(r.date, { keys: safeInt(r.keys), mouse: safeInt(r.mouse) });
+      }
+      const keys = [];
+      const mouse = [];
+      for (let i = 0; i < HERO_RANGE_DAYS; i++) {
+        const d = new Date(start);
+        d.setDate(start.getDate() + i);
+        const slot = byDate.get(fmtDate(d)) || { keys: 0, mouse: 0 };
+        keys.push(slot.keys);
+        mouse.push(slot.mouse);
+      }
+      return { keys, mouse };
+    } catch (e) {
+      console.error("fetchHeroSeries failed", e);
+      return { keys: new Array(HERO_RANGE_DAYS).fill(0), mouse: new Array(HERO_RANGE_DAYS).fill(0) };
+    }
+  }
+
+  /** 「今日を除いた直近 7 日」の平均を計算。HERO_RANGE_DAYS=14 を前提に、
+   *  末尾 (今日) を除外し、その手前 7 日 (= [-8..-1]) の平均を返す。 */
+  function avg7ExcludingToday(series) {
+    if (!Array.isArray(series) || series.length < 8) return 0;
+    const slice = series.slice(series.length - 8, series.length - 1); // 7 日
+    if (slice.length === 0) return 0;
+    return slice.reduce((s, v) => s + safeInt(v), 0) / slice.length;
+  }
+
+  /** 7 日平均と今日値の差分パーセント。avg=0 のときは null (表示は "—")。 */
+  function computeDeltaPct(todayVal, avg7) {
+    if (!avg7 || avg7 <= 0) return null;
+    return ((todayVal - avg7) / avg7) * 100;
+  }
+
+  /** スパークラインを描画。
+   *  既存の <svg id=...> の中の `.line` / `.area` / `.dot` を更新する。
+   *  線描画アニメーションは `.is-drawn` クラス付け外しで再生する: 一旦
+   *  クラスを外して stroke-dashoffset を 100% に戻し、次フレームで is-drawn
+   *  を付け直すと CSS transition が 0 まで補間する。 */
+  function renderSparkline(svg, data) {
+    if (!svg || !Array.isArray(data) || data.length === 0) return;
+    const W = 100;
+    const H = 24;
+    const max = Math.max(1, ...data.map(v => safeInt(v)));
+    const n = data.length;
+    // 単一データ点だと stepX が 0 になり Infinity が出る。中央に置く。
+    const stepX = n > 1 ? W / (n - 1) : 0;
+    const pts = data.map((v, i) => {
+      const x = n > 1 ? i * stepX : W / 2;
+      const y = H - (safeInt(v) / max) * (H - 2) - 1;
+      return [x, y];
     });
-    renderTrip({
-      kind: "scroll",
-      meters: safeInt(data.scrollYTicks) * M_PER_SCROLL_TICK,
-      landmarks: SCROLL_LANDMARKS,
-      numEl: $("trip-scroll-num"),
-      unitEl: $("trip-scroll-unit"),
-      ringEl: $("trip-scroll-ring"),
-      goalEl: $("trip-scroll-goal"),
-      cmpEl: $("trip-scroll-cmp"),
+    const dLine = pts.map((p, i) => (i === 0 ? `M ${p[0]} ${p[1]}` : `L ${p[0]} ${p[1]}`)).join(" ");
+    const dArea = `${dLine} L ${W} ${H} L 0 ${H} Z`;
+    const last = pts[pts.length - 1];
+
+    const line = svg.querySelector(".line");
+    const area = svg.querySelector(".area");
+    const dot  = svg.querySelector(".dot");
+    if (line) line.setAttribute("d", dLine);
+    if (area) area.setAttribute("d", dArea);
+    if (dot) {
+      dot.setAttribute("cx", last[0].toFixed(2));
+      dot.setAttribute("cy", last[1].toFixed(2));
+    }
+
+    // 線の長さを実測して dasharray の基準にする。viewBox=100x24 の世界で
+    // 計算しているので、stroke-dasharray もその尺度で OK。
+    let len = 0;
+    try {
+      len = line ? line.getTotalLength() : W;
+    } catch {
+      len = W;
+    }
+    if (!Number.isFinite(len) || len <= 0) len = W;
+    svg.style.setProperty("--len", String(len));
+
+    // アニメ再生: いったん is-drawn を外して dashoffset を初期化、
+    // 2 フレーム待って付け直すと 0 まで補間が走る。
+    svg.classList.remove("is-drawn");
+    void svg.getBoundingClientRect();
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        svg.classList.add("is-drawn");
+      });
     });
+  }
 
-    // ---- 時間帯ヒートマップ
-    buildHourHeatmap(data.hourly || [], safeInt(data.hourlyMax));
-
-    // ---- キー内訳
-    buildBreakdownBars($("keys-breakdown"), (data.keys || []).slice(0, KEY_TOP_N), prettyKey);
-
-    // ---- マウス内訳
-    const mouseLabels = L().mouseLabels || {};
-    buildBreakdownBars(
-      $("mouse-breakdown"),
-      data.mouse || [],
-      (raw) => mouseLabels[raw] || raw,
-    );
-
-    // データ皆無時のフォールバック
-    const hasAny = data.days > 0;
-    for (const id of ["keys-breakdown", "mouse-breakdown"]) {
-      const el = $(id);
-      if (!hasAny && el.childElementCount === 0) {
-        const p = document.createElement("div");
-        p.className = "muted breakdown-empty";
-        p.textContent = L().noAnalytics;
-        el.appendChild(p);
+  /** ヒーローの KPI を 1 つ更新する。
+   *  数値はカウントアップ、スパークラインは線描画、7日平均と差分は静的反映。 */
+  function renderHeroKPI({ prefix, todayVal, avg7Val, series }) {
+    const numEl   = $(`hero-${prefix}-num`);
+    const avg7El  = $(`hero-${prefix}-avg7`);
+    const deltaEl = $(`hero-${prefix}-delta`);
+    const sparkEl = $(`hero-${prefix}-spark`);
+    if (numEl)  animateCountUp(numEl, todayVal);
+    if (avg7El) avg7El.textContent = fmtNum(Math.round(avg7Val));
+    if (deltaEl) {
+      const pct = computeDeltaPct(todayVal, avg7Val);
+      const labels = L();
+      deltaEl.classList.remove("up", "down", "muted");
+      if (pct === null) {
+        deltaEl.textContent = "—";
+        deltaEl.classList.add("muted");
+      } else {
+        deltaEl.textContent = labels.hero_delta(pct);
+        deltaEl.classList.add(pct >= 0 ? "up" : "down");
       }
     }
+    if (sparkEl) renderSparkline(sparkEl, series);
   }
 
-  function svgEl(name, attrs = {}) {
-    const el = document.createElementNS("http://www.w3.org/2000/svg", name);
-    for (const [k, v] of Object.entries(attrs)) {
-      el.setAttribute(k, String(v));
-    }
-    return el;
-  }
-
-  function appendPath(svg, d, attrs = {}) {
-    svg.appendChild(svgEl("path", {
-      d,
-      fill: "none",
-      stroke: "currentColor",
-      "stroke-width": "5",
-      "stroke-linecap": "round",
-      "stroke-linejoin": "round",
-      ...attrs,
-    }));
-  }
-
-  function createGoalSvg(kind, name) {
-    const svg = svgEl("svg", {
-      viewBox: "0 0 96 96",
-      role: "img",
-      "aria-label": name || "goal",
+  /** 0 → target にバーを伸ばす 2-rAF パターン。 */
+  function animateBarFill(el, targetPct, delayMs = 0) {
+    if (!el) return;
+    el.style.setProperty("--delay", `${delayMs}ms`);
+    el.style.width = "0%";
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        el.style.width = `${Math.max(0, Math.min(100, targetPct)).toFixed(2)}%`;
+      });
     });
-    const label = String(name || "");
-    const addCircle = (cx, cy, r, attrs = {}) => {
-      svg.appendChild(svgEl("circle", {
-        cx, cy, r,
-        fill: "none",
-        stroke: "currentColor",
-        "stroke-width": "5",
-        ...attrs,
-      }));
-    };
-
-    if (label.includes("地球") || label.includes("月") || label.includes("宇宙") || label.includes("ISS") || label.includes("軌道")) {
-      addCircle(48, 48, label.includes("月") ? 24 : 30);
-      appendPath(svg, "M20 50c14-8 39-8 56 2");
-      appendPath(svg, "M48 18c-9 13-9 47 0 60");
-      appendPath(svg, "M22 36c12 6 38 6 52 0");
-      return svg;
-    }
-    if (label.includes("山") || label.includes("エベレスト") || label.includes("富士")) {
-      appendPath(svg, "M14 74 38 28l16 28 10-16 18 34H14Z");
-      appendPath(svg, "M38 28l8 16 8-10");
-      return svg;
-    }
-    if (label.includes("タワー") || label.includes("ツリー") || label.includes("ブルジュ") || label.includes("斜塔") || label.includes("女神")) {
-      appendPath(svg, "M48 16 30 78h36L48 16Z");
-      appendPath(svg, "M36 42h24M32 58h32M42 78V58M54 78V58");
-      return svg;
-    }
-    if (label.includes("マラソン") || label.includes("100m")) {
-      addCircle(48, 24, 7);
-      appendPath(svg, "M44 34 36 50l16 10 12 18");
-      appendPath(svg, "M43 50 28 74M52 44l18 6");
-      return svg;
-    }
-    if (label.includes("電車")) {
-      appendPath(svg, "M22 28h52v34H22V28Z");
-      appendPath(svg, "M32 62l-8 12M64 62l8 12M32 40h32M34 74h28");
-      return svg;
-    }
-    if (label.includes("大阪") || label.includes("福岡") || label.includes("札幌") || label.includes("那覇") || label.includes("熱海")) {
-      appendPath(svg, "M18 74h60");
-      appendPath(svg, "M26 74V38h14v36M46 74V24h18v50M68 74V48h10v26");
-      return svg;
-    }
-    if (label.includes("ジェット") || label.includes("成層圏")) {
-      appendPath(svg, "M18 58 80 30 58 74 48 56 18 58Z");
-      appendPath(svg, "M48 56 80 30");
-      return svg;
-    }
-    if (label.includes("電柱") || label.includes("ビル")) {
-      appendPath(svg, "M28 76V24h34v52M36 36h18M36 48h18M36 60h18");
-      return svg;
-    }
-    if (kind === "scroll") {
-      appendPath(svg, "M20 72h56M28 72 48 28l20 44M40 52h16");
-      return svg;
-    }
-    appendPath(svg, "M20 66c20-24 36-24 56 0");
-    appendPath(svg, "M22 66h52");
-    addCircle(48, 34, 6);
-    return svg;
   }
 
-  /** 「旅」カード 1 枚をドーナツチャートとして描画する。 */
-  function renderTrip({ kind, meters, landmarks, numEl, unitEl, ringEl, goalEl, cmpEl }) {
-    if (!numEl || !unitEl || !ringEl || !goalEl || !cmpEl) return;
+  /** ストリップの「マウス距離」「スクロール高さ」セル 1 つを更新。 */
+  function renderStripTrip({ prefix, meters, landmarks }) {
+    const numEl  = $(`trip-${prefix}-num`);
+    const unitEl = $(`trip-${prefix}-unit`);
+    const goalEl = $(`trip-${prefix}-goal`);
+    const fillEl = $(`trip-${prefix}-fill`);
+    const pctEl  = $(`trip-${prefix}-pct`);
+    if (!numEl || !unitEl || !goalEl || !fillEl || !pctEl) return;
+
     const m = Math.max(0, Number(meters) || 0);
     const { num, unit } = fmtTripDistance(m);
     numEl.textContent = num;
     unitEl.textContent = unit;
 
     const lm = findLandmark(m, landmarks);
+    const labels = L();
     if (!lm) {
-      ringEl.style.strokeDasharray = "0 100";
-      goalEl.replaceChildren(createGoalSvg(kind, ""));
-      cmpEl.textContent = L().trip_zero;
+      goalEl.textContent = labels.trip_goal_to(landmarks[0]?.name || "—");
+      animateBarFill(fillEl, 0);
+      pctEl.textContent = "0%";
       return;
     }
-    goalEl.replaceChildren(createGoalSvg(kind, lm.lm.name));
     if (lm.exceeded) {
-      ringEl.style.strokeDasharray = "100 100";
-      const mult = lm.multiple;
-      if (mult >= 1.5) {
-        cmpEl.textContent = L().trip_far_beyond(lm.lm.name, mult.toFixed(1));
-      } else {
-        cmpEl.textContent = L().trip_passed(lm.lm.name);
-      }
+      goalEl.textContent = labels.trip_goal_passed(lm.lm.name);
+      animateBarFill(fillEl, 100);
+      pctEl.textContent = "100%";
       return;
     }
+    goalEl.textContent = labels.trip_goal_to(lm.lm.name);
     const pct = Math.min(100, Math.max(0, lm.pct));
-    ringEl.style.strokeDasharray = `${pct.toFixed(2)} 100`;
-    cmpEl.textContent = L().trip_to(lm.lm.name, lm.pct.toFixed(1));
+    animateBarFill(fillEl, pct);
+    pctEl.textContent = `${pct.toFixed(1)}%`;
   }
 
-  /** 横棒チャートを構築。
-   *  最大値で正規化し、ラベル + バー + 数値 の 3 列レイアウト。 */
-  function buildBreakdownBars(container, items, labelFn) {
-    container.replaceChildren();
+  /** 24 時間ヒストグラム: 本日 (濃) + 7 日平均 (淡) を 1 セル内で重ねる。
+   *  両系列を正規化する際は両系列の最大値の方を分母にし、相対比較が
+   *  視覚的に成り立つようにする。 */
+  function renderHours(todayHourly, avg7Hourly) {
+    const wrap = $("hours-cells");
+    if (!wrap) return;
+    wrap.replaceChildren();
+
+    const today = Array.isArray(todayHourly) ? todayHourly : new Array(24).fill(0);
+    const avg = Array.isArray(avg7Hourly) ? avg7Hourly : new Array(24).fill(0);
+    const safeT = (i) => safeInt(today[i] || 0);
+    const safeA = (i) => Math.max(0, Number(avg[i] || 0));
+    let max = 0;
+    for (let i = 0; i < 24; i++) {
+      const v = Math.max(safeT(i), safeA(i));
+      if (v > max) max = v;
+    }
+    if (max <= 0) max = 1;
+
+    const frag = document.createDocumentFragment();
+    const targets = [];
+    for (let h = 0; h < 24; h++) {
+      const aRaw = safeA(h);
+      const tRaw = safeT(h);
+
+      const cell = document.createElement("div");
+      cell.className = "cr-hour-cell";
+      cell.dataset.hour = String(h);
+      cell.dataset.val = String(tRaw);
+      cell.setAttribute("aria-label", L().hourTooltip(h, fmtNum(tRaw)));
+      // 左から右へ立ち上がる waves 演出のため時間帯 index で遅延を加算。
+      cell.style.setProperty("--delay", `${h * 22}ms`);
+
+      const avgBar = document.createElement("div");
+      avgBar.className = "cr-hour-bar-avg";
+      // has-avg 属性で 0 のときマーカーを完全に消す。
+      avgBar.dataset.hasAvg = aRaw > 0 ? "true" : "false";
+
+      const tBar = document.createElement("div");
+      tBar.className = "cr-hour-bar-today";
+
+      // 描画順: 先に avg (背景 + マーカー)、後に today (z-index 1 で前面)。
+      // ただし avg::after マーカーは z-index 2 で today より前に出る。
+      cell.append(avgBar, tBar);
+      frag.appendChild(cell);
+
+      // 値が 0 でも見えないだけ。値があるときは 3% 下限で必ず可視 (今日マーカーも同様)。
+      const pctAvg = aRaw > 0 ? Math.max(3, (aRaw / max) * 100) : 0;
+      const pctT   = tRaw > 0 ? Math.max(3, (tRaw / max) * 100) : 0;
+      targets.push({ avgBar, tBar, pctAvg, pctT });
+    }
+    wrap.appendChild(frag);
+
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        for (const t of targets) {
+          t.avgBar.style.setProperty("--h-avg", `${t.pctAvg.toFixed(2)}%`);
+          t.tBar.style.setProperty("--h-today", `${t.pctT.toFixed(2)}%`);
+        }
+      });
+    });
+  }
+
+  /** 「よく使うキー」グリッド (2 列)。
+   *  各行は モノスペース風のキーキャップ風 chip + バー + 件数。 */
+  function renderKeysGrid(items) {
+    const grid = $("keys-breakdown");
+    if (!grid) return;
+    grid.replaceChildren();
+
     if (!items || items.length === 0) {
       const p = document.createElement("div");
-      p.className = "muted breakdown-empty";
+      p.className = "cr-empty";
       p.textContent = L().noAnalytics;
-      container.appendChild(p);
+      grid.appendChild(p);
       return;
     }
     const max = items.reduce((m, it) => Math.max(m, safeInt(it.count)), 1);
     const frag = document.createDocumentFragment();
-    for (const it of items) {
+    const fills = [];
+    items.forEach((it, idx) => {
       const count = safeInt(it.count);
-      const pct = Math.max(2, Math.round((count / max) * 100));
+      // count=0 → 0% (track だけ見える)。count>0 → 最低 10% で必ず可視。
+      // 狭いコラム幅でも 10% あれば 4-5px ほど確保できる。
+      const pct = count > 0
+        ? Math.max(10, Math.round((count / max) * 100))
+        : 0;
       const row = document.createElement("div");
-      row.className = "br-row";
-      const label = document.createElement("span");
-      label.className = "br-label";
-      label.textContent = labelFn(it.label || "");
-      const track = document.createElement("span");
-      track.className = "br-track";
+      row.className = "cr-keyrow";
+
+      const k = document.createElement("div");
+      k.className = "k";
+      k.textContent = prettyKey(it.label || "");
+
+      const bar = document.createElement("div");
+      bar.className = "bar";
       const fill = document.createElement("span");
-      fill.className = "br-fill";
-      fill.style.width = `${pct}%`;
-      track.appendChild(fill);
-      const num = document.createElement("span");
-      num.className = "br-num";
-      num.textContent = fmtNum(count);
-      row.append(label, track, num);
+      fill.style.width = "0%";
+      fill.style.setProperty("--delay", `${idx * 50}ms`);
+      bar.appendChild(fill);
+
+      const n = document.createElement("div");
+      n.className = "n";
+      n.textContent = fmtNum(count);
+
+      row.append(k, bar, n);
       frag.appendChild(row);
-    }
-    container.appendChild(frag);
+      fills.push({ el: fill, pct });
+    });
+    grid.appendChild(frag);
+
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        for (const f of fills) {
+          f.el.style.width = `${f.pct}%`;
+        }
+      });
+    });
   }
 
-  /** 時間帯リズムチャート: 24 本の縦バー。
-   *  分析タブのスコープ (今日 / 7日 / 今月 / 全期間) で絞った全日を時間帯
-   *  ごとに合算した値を、max で正規化して「山」として表示する。 */
-  function buildHourHeatmap(hoursArr, max) {
-    const wrap = $("hour-heatmap");
-    wrap.replaceChildren();
+  /** マウス内訳: 左/右/中クリックの行を 3 列レイアウトで描画。 */
+  function renderMouseList(items) {
+    const list = $("mouse-breakdown");
+    if (!list) return;
+    list.replaceChildren();
 
-    const safeMax = max > 0 ? max : 1;
-    const grid = document.createElement("div");
-    grid.className = "hh-chart";
-    grid.setAttribute("data-empty", max === 0 ? "true" : "false");
-
-    for (let h = 0; h < 24; h++) {
-      const v = safeInt((hoursArr && hoursArr[h]) || 0);
-      const pct = v > 0 ? Math.max(8, Math.round((v / safeMax) * 100)) : 2;
-      const cell = document.createElement("span");
-      cell.className = "hh-cell";
-      cell.dataset.hour = String(h);
-      cell.dataset.val = String(v);
-      cell.setAttribute("aria-label", L().hourTooltip(h, fmtNum(v)));
-      cell.style.setProperty("--h", `${pct}%`);
-      cell.style.setProperty("--delay", `${h * 10}ms`);
-
-      const bar = document.createElement("span");
-      bar.className = "hh-bar";
-      const label = document.createElement("span");
-      label.className = "hh-label";
-      label.textContent = (h % 3 === 0) ? String(h) : "";
-      cell.append(bar, label);
-      grid.appendChild(cell);
+    if (!items || items.length === 0) {
+      const p = document.createElement("div");
+      p.className = "cr-empty";
+      p.textContent = L().noAnalytics;
+      list.appendChild(p);
+      return;
     }
 
-    wrap.appendChild(grid);
+    const labels = L().mouseLabels || {};
+    const max = items.reduce((m, it) => Math.max(m, safeInt(it.count)), 1);
+    const frag = document.createDocumentFragment();
+    const fills = [];
+    items.forEach((it, idx) => {
+      const count = safeInt(it.count);
+      const pct = count > 0
+        ? Math.max(10, Math.round((count / max) * 100))
+        : 0;
+      const row = document.createElement("div");
+      row.className = "cr-mouserow";
+
+      const lbl = document.createElement("div");
+      lbl.className = "lbl";
+      lbl.textContent = labels[it.label] || it.label || "";
+
+      const bar = document.createElement("div");
+      bar.className = "bar";
+      const fill = document.createElement("span");
+      fill.style.width = "0%";
+      fill.style.setProperty("--delay", `${idx * 60}ms`);
+      bar.appendChild(fill);
+
+      const n = document.createElement("div");
+      n.className = "n";
+      n.textContent = fmtNum(count);
+
+      row.append(lbl, bar, n);
+      frag.appendChild(row);
+      fills.push({ el: fill, pct });
+    });
+    list.appendChild(frag);
+
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        for (const f of fills) {
+          f.el.style.width = `${f.pct}%`;
+        }
+      });
+    });
+  }
+
+  /** 分析タブ上段のサブヘッダ (日付 + 時刻) を更新。 */
+  function updateAnalyticsSubhead() {
+    const now = new Date();
+    const dateEl = $("cr-date-str");
+    if (dateEl) dateEl.textContent = L().dateLabel(now);
+    const clockEl = $("cr-clock-str");
+    if (clockEl) clockEl.textContent = L().hero_now_at(now.getHours(), now.getMinutes());
+  }
+
+  /** 分析データを取得して各セクションを再描画。
+   *  4 つのリクエストを並列実行: 今日値、スコープ集計、14日系列、週集計
+   *  (時間帯overlay 用)。失敗時は noData フォールバックを各セクション内で出す。 */
+  async function refreshAnalytics() {
+    updateAnalyticsSubhead();
+    let scopeData, weekData, todayPayload, heroSeries;
+    try {
+      [scopeData, weekData, todayPayload, heroSeries] = await Promise.all([
+        invoke("get_analytics", { scope: state.analyticsScope }),
+        invoke("get_analytics", { scope: "week" }),
+        invoke("get_today_stats"),
+        fetchHeroSeries(),
+      ]);
+    } catch (e) {
+      console.error("refreshAnalytics fetch failed", e);
+      return;
+    }
+    state.analyticsLoaded = true;
+
+    // ---- Hero: 今日値 + 7日平均 + 14日スパークライン -----------------
+    const todayKeys = safeInt(todayPayload && todayPayload.keys);
+    const todayMouse = safeInt(todayPayload && todayPayload.mouse);
+    const avg7Keys = avg7ExcludingToday(heroSeries.keys);
+    const avg7Mouse = avg7ExcludingToday(heroSeries.mouse);
+    renderHeroKPI({ prefix: "keys",  todayVal: todayKeys,  avg7Val: avg7Keys,  series: heroSeries.keys  });
+    renderHeroKPI({ prefix: "mouse", todayVal: todayMouse, avg7Val: avg7Mouse, series: heroSeries.mouse });
+
+    // ---- Strip: 1日平均 + マウス距離 + スクロール高 ------------------
+    animateCountUp($("kpi-average-num"), safeInt(scopeData.averagePerDay));
+    renderStripTrip({
+      prefix: "mouse",
+      meters: safeInt(scopeData.mouseDistancePx) / PX_PER_METER,
+      landmarks: MOUSE_LANDMARKS,
+    });
+    renderStripTrip({
+      prefix: "scroll",
+      meters: safeInt(scopeData.scrollYTicks) * M_PER_SCROLL_TICK,
+      landmarks: SCROLL_LANDMARKS,
+    });
+
+    // ---- Hour histogram: 選択スコープ + 7日平均overlay ---------------
+    // 7 日平均 per hour = 週合計 / 7。月や全期間でも比較相手は常に直近7日。
+    const avg7Hourly = (Array.isArray(weekData.hourly) ? weekData.hourly : new Array(24).fill(0))
+      .map(v => Math.max(0, Number(v) || 0) / 7);
+    renderHours(scopeData.hourly || [], avg7Hourly);
+
+    // ---- Bottom split: top keys + マウス内訳 ------------------------
+    renderKeysGrid((scopeData.keys || []).slice(0, KEY_TOP_N));
+    renderMouseList(scopeData.mouse || []);
   }
 
   /** PAUSED バッジの表示/非表示。 */
@@ -1144,20 +1592,14 @@
     persistMonthsShown(m);
   }
 
-  /** 期間スライダー (1M / 3M / 6M / 12M)。 */
+  /** 期間スイッチ (1/3/6/12ヶ月) のクリック受付。
+   *  デザイン刷新で従来のスライダーは廃止し、4 連ボタン (`.cr-range button[data-pos]`)
+   *  に統一した。 */
   function setupPeriodSlider() {
-    const input = $("period-range");
-    if (input) {
-      input.addEventListener("input", (ev) => {
+    for (const btn of document.querySelectorAll(".cr-range button[data-pos]")) {
+      btn.addEventListener("click", (ev) => {
         if (!ev.isTrusted || !navReady()) return;
-        selectPeriodByPos(Number(input.value));
-      });
-    }
-    // 目盛りラベルもクリックで選択可能 (アクセシビリティ + 使いやすさ)。
-    for (const tick of document.querySelectorAll(".period-ticks span")) {
-      tick.addEventListener("click", (ev) => {
-        if (!ev.isTrusted || !navReady()) return;
-        selectPeriodByPos(Number(tick.dataset.pos));
+        selectPeriodByPos(Number(btn.dataset.pos));
       });
     }
   }
@@ -1237,8 +1679,8 @@
           return;
         }
 
-        // (2) 時間帯ヒートマップセル
-        const hh = closest(".hh-cell");
+        // (2) 時間帯ヒストグラムセル (Refinement design)
+        const hh = closest(".cr-hour-cell");
         if (hh) {
           const h = safeInt(hh.dataset.hour);
           const v = safeInt(hh.dataset.val);
