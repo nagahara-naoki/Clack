@@ -13,14 +13,12 @@
 //    空 → 1 個目では bar の min-height によりサイズ変動しない。
 
 (() => {
-  "use strict";
-
   const T = window.__TAURI__;
   if (!T) return;
   const listen = T.event.listen;
   const invoke = T.core.invoke;
-  const getCurrentWindow = T.window && T.window.getCurrentWindow;
-  const LogicalSize = T.window && T.window.LogicalSize;
+  const getCurrentWindow = T.window?.getCurrentWindow;
+  const LogicalSize = T.window?.LogicalSize;
 
   /** スタックモード時にバッファに保持するチップの最大個数。
    *  非スタックモードは常に 1 個のみを表示し、新しいキー入力で即座に
@@ -40,29 +38,130 @@
   // ラベル整形
   // ============================================================
 
-  const KEY_LABEL = {
+  /** プラットフォーム判定。Mac 系なら true。
+   *  navigator.platform は非推奨だが、Tauri WebView では十分信頼できる。 */
+  const IS_MAC =
+    typeof navigator !== "undefined" &&
+    /Mac|iPod|iPhone|iPad/.test(`${navigator.platform || ""} ${navigator.userAgent || ""}`);
+
+  /** Windows / Linux 用キーラベル (`MetaLeft = ❖`、`Alt = Alt`)。
+   *  rdev 物理キー名 (`ShiftLeft` 等) と、Rust 側 chord で使われる汎用名
+   *  (`Shift` 等) の **両方** をエントリに持つ。後者は chord 文字列内で
+   *  modifier として現れる。 */
+  const KEY_LABEL_WIN = {
+    // 汎用 modifier 名 (chord 内 "Shift+KeyA" の前段で使われる)
+    Shift: "⇧ Shift",
+    Ctrl: "Ctrl",
+    Meta: "❖",
+    // rdev 物理キー名
     Space: "␣ Space",
     Return: "↵ Enter",
     BackSpace: "⌫ BS",
     Tab: "⇥ Tab",
     Escape: "Esc",
     CapsLock: "Caps",
-    ShiftLeft: "⇧ Shift", ShiftRight: "Shift ⇧",
-    ControlLeft: "Ctrl", ControlRight: "Ctrl",
-    Alt: "Alt", AltGr: "AltGr",
-    MetaLeft: "❖", MetaRight: "❖",
-    Comma: ",", Dot: ".", SemiColon: ";",
-    Quote: "'", BackQuote: "`",
-    Slash: "/", BackSlash: "\\",
-    Equal: "=", Minus: "-",
-    LeftBracket: "[", RightBracket: "]",
-    UpArrow: "↑", DownArrow: "↓", LeftArrow: "←", RightArrow: "→",
-    Insert: "Ins", Delete: "Del",
-    Home: "Home", End: "End", PageUp: "PgUp", PageDown: "PgDn",
-    PrintScreen: "PrtSc", ScrollLock: "ScrLk", Pause: "Pause", NumLock: "NumLk",
-    IntlYen: "¥", IntlBackslash: "\\", IntlRo: "_",
-    KanaMode: "かな", ConvertJp: "変換", NonConvert: "無変換",
+    ShiftLeft: "⇧ Shift",
+    ShiftRight: "Shift ⇧",
+    ControlLeft: "Ctrl",
+    ControlRight: "Ctrl",
+    Alt: "Alt",
+    AltGr: "AltGr",
+    MetaLeft: "❖",
+    MetaRight: "❖",
+    Comma: ",",
+    Dot: ".",
+    SemiColon: ";",
+    Quote: "'",
+    BackQuote: "`",
+    Slash: "/",
+    BackSlash: "\\",
+    Equal: "=",
+    Minus: "-",
+    LeftBracket: "[",
+    RightBracket: "]",
+    UpArrow: "↑",
+    DownArrow: "↓",
+    LeftArrow: "←",
+    RightArrow: "→",
+    Insert: "Ins",
+    Delete: "Del",
+    Home: "Home",
+    End: "End",
+    PageUp: "PgUp",
+    PageDown: "PgDn",
+    PrintScreen: "PrtSc",
+    ScrollLock: "ScrLk",
+    Pause: "Pause",
+    NumLock: "NumLk",
+    IntlYen: "¥",
+    IntlBackslash: "\\",
+    IntlRo: "_",
+    KanaMode: "かな",
+    ConvertJp: "変換",
+    NonConvert: "無変換",
   };
+
+  /** macOS 用キーラベル。
+   *  - `Alt → ⌥ Option` / `MetaLeft → ⌘` / `ControlLeft → ⌃ Ctrl`
+   *  - BackSpace は Apple キーボードでは「delete」と表記される
+   *  - 矢印キーや Home/End はキー彫刻の Unicode 記号で表示
+   *  - JIS Mac の「英数 / かな」は ConvertJp / NonConvert に対応
+   *  - chord 内汎用名 (`Shift`, `Ctrl`, `Meta`) も網羅 */
+  const KEY_LABEL_MAC = {
+    // 汎用 modifier 名 (chord 内 "Shift+KeyA" の前段で使われる)
+    Shift: "⇧ Shift",
+    Ctrl: "⌃ Ctrl",
+    Meta: "⌘",
+    // rdev 物理キー名
+    Space: "Space",
+    Return: "↵ Return",
+    BackSpace: "⌫ delete",
+    Tab: "⇥ Tab",
+    Escape: "esc",
+    CapsLock: "Caps",
+    ShiftLeft: "⇧ Shift",
+    ShiftRight: "Shift ⇧",
+    ControlLeft: "⌃ Ctrl",
+    ControlRight: "Ctrl ⌃",
+    Alt: "⌥ Option",
+    AltGr: "⌥ Option",
+    MetaLeft: "⌘",
+    MetaRight: "⌘",
+    Comma: ",",
+    Dot: ".",
+    SemiColon: ";",
+    Quote: "'",
+    BackQuote: "`",
+    Slash: "/",
+    BackSlash: "\\",
+    Equal: "=",
+    Minus: "-",
+    LeftBracket: "[",
+    RightBracket: "]",
+    UpArrow: "↑",
+    DownArrow: "↓",
+    LeftArrow: "←",
+    RightArrow: "→",
+    Insert: "Help",
+    Delete: "⌦",
+    Home: "↖",
+    End: "↘",
+    PageUp: "⇞",
+    PageDown: "⇟",
+    PrintScreen: "⌥ ⇧ 3",
+    ScrollLock: "Scroll",
+    Pause: "Pause",
+    NumLock: "Clear",
+    IntlYen: "¥",
+    IntlBackslash: "§",
+    IntlRo: "_",
+    KanaMode: "かな",
+    ConvertJp: "英数",
+    NonConvert: "かな",
+  };
+
+  /** 現在 OS のキーラベル辞書を選ぶ。 */
+  const KEY_LABEL = IS_MAC ? KEY_LABEL_MAC : KEY_LABEL_WIN;
 
   const MOUSE_LABEL = {
     Left: "左クリック",
@@ -75,26 +174,29 @@
     if (KEY_LABEL[raw]) return KEY_LABEL[raw];
     if (/^Key[A-Z]$/.test(raw)) return raw.slice(3);
     if (/^Num\d$/.test(raw)) return raw.slice(3);
-    if (/^Kp\d$/.test(raw)) return "Num" + raw.slice(2);
+    if (/^Kp\d$/.test(raw)) return `Num${raw.slice(2)}`;
     if (/^F\d{1,2}$/.test(raw)) return raw;
     return raw;
   }
 
+  /** chord 文字列 (`Shift+KeyA` 等) を見やすい表示に整える。
+   *  全パート (= 修飾キーも主キーも) を prettyAtom 経由で翻訳するので、
+   *  Mac OS では `⇧ Shift+A`、Windows では `⇧ Shift+A` のように
+   *  OS に合わせたラベルになる。 */
   function prettyKeyChain(raw) {
     if (!raw) return "?";
-    const parts = String(raw).split("+");
-    return parts
-      .map((p, i) => (i < parts.length - 1 ? p : prettyAtom(p)))
-      .join("+");
+    return String(raw).split("+").map(prettyAtom).join("+");
   }
 
+  /** マウスの chord 文字列 (`Shift+Left` 等) を整形。修飾キーは prettyAtom
+   *  で OS 別に翻訳し、ボタン部分は MOUSE_LABEL で日本語化する。 */
   function prettyMouse(raw) {
     if (!raw) return "Mouse";
     const parts = String(raw).split("+");
     const last = parts.pop();
     const tail = MOUSE_LABEL[last] || last;
     if (parts.length === 0) return tail;
-    return parts.join("+") + "+" + tail;
+    return `${parts.map(prettyAtom).join("+")}+${tail}`;
   }
 
   // ============================================================
@@ -113,7 +215,7 @@
 
   /** 指定したチップを即座にフェードアウトさせ、アニメ完了で DOM から外す。 */
   function fadeAndRemove(c) {
-    if (!c || !c.isConnected) return;
+    if (!c?.isConnected) return;
     c.classList.add("is-fading");
     c.addEventListener(
       "animationend",
@@ -127,8 +229,8 @@
 
   function addChip(payload) {
     if (!bar) return;
-    const kind = payload && payload.kind;
-    const raw = payload && payload.label;
+    const kind = payload?.kind;
+    const raw = payload?.label;
     if (!kind || !raw) return;
 
     const text = kind === "mouse" ? prettyMouse(raw) : prettyKeyChain(raw);
@@ -139,7 +241,7 @@
     }
 
     const chip = document.createElement("span");
-    chip.className = "chip is-recent" + (kind === "mouse" ? " is-mouse" : "");
+    chip.className = `chip is-recent${kind === "mouse" ? " is-mouse" : ""}`;
     chip.textContent = text;
 
     if (stackMode) {
@@ -174,11 +276,7 @@
     if (available <= 0) return;
     // safety: 想定外のループ暴走を防ぐ。
     let safety = 0;
-    while (
-      bar.offsetHeight > available &&
-      bar.childElementCount > 1 &&
-      safety++ < 200
-    ) {
+    while (bar.offsetHeight > available && bar.childElementCount > 1 && safety++ < 200) {
       bar.firstElementChild.remove();
     }
   }
@@ -261,7 +359,7 @@
   // ============================================================
 
   listen("live-key", (event) => {
-    if (event && event.payload) addChip(event.payload);
+    if (event?.payload) addChip(event.payload);
   });
 
   // 初期同期 (CSS の既定 = 非スタック と JS state を合わせる)。
@@ -272,8 +370,8 @@
   // - data-tauri-drag-region="false" 配下 (操作ボタン等) は除外
   document.addEventListener("mousedown", async (ev) => {
     if (ev.button !== 0) return;
-    if (!ev.target || !ev.target.closest) return;
-    if (ev.target.closest("[data-tauri-drag-region=\"false\"]")) return;
+    if (!ev.target?.closest) return;
+    if (ev.target.closest('[data-tauri-drag-region="false"]')) return;
     if (ev.target.closest("button")) return;
     if (!getCurrentWindow) return;
     try {

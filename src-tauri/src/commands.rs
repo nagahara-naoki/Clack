@@ -113,6 +113,27 @@ pub struct LabelCount {
     pub count: u64,
 }
 
+/// 単日の詳細データ。ヒートマップセルをクリックした時のポップオーバーで表示する
+/// 「その日 1 日ぶんの全部」: 総数 / 時間帯 / トップキー / マウス内訳 / 旅データ。
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct DayDetail {
+    pub date: String,
+    pub keys: u64,
+    pub mouse: u64,
+    pub hourly: Vec<u64>,
+    pub hourly_max: u64,
+    /// 当日のキー内訳 (降順、最大 12 件)。
+    pub key_top: Vec<LabelCount>,
+    /// 当日のマウス内訳 (降順、最大 4 件)。
+    pub mouse_breakdown: Vec<LabelCount>,
+    pub mouse_distance_px: u64,
+    pub scroll_y_ticks: u64,
+    pub active_ms: u64,
+    /// データそのものが無い日 (履歴に該当エントリ無 + 今日でもない) は true。
+    pub empty: bool,
+}
+
 /// エクスポートファイルの構造体 (バージョン付き)。
 /// 将来の互換性のため `version` を必ず確認する。
 #[derive(Serialize, Deserialize)]
@@ -203,6 +224,65 @@ pub fn get_stats_range(
     Ok(out)
 }
 
+/// ヒートマップのセル 1 つをクリックしたときに表示する詳細データ。
+/// `date` は `YYYY-MM-DD` 形式を期待。フォーマット不正・未来日は
+/// `empty=true` の空データを返す (フロントで「データなし」を表示するため)。
+#[tauri::command]
+pub fn get_day_detail(
+    state: State<'_, AppStateHandle>,
+    date: String,
+) -> DayDetail {
+    let parsed = date_util::parse_date(&date);
+    let s = lock_state(&state);
+
+    // 日付が壊れていたらフロント側の入力ミス。空データを返して描画を壊さない。
+    let date_str = if parsed.is_some() {
+        date.clone()
+    } else {
+        date
+    };
+
+    let stats = s.get_stats(&date_str);
+    let empty = stats.keys == 0
+        && stats.mouse == 0
+        && stats.key_breakdown.is_empty()
+        && stats.mouse_breakdown.is_empty()
+        && stats.active_ms == 0;
+
+    let mut key_top: Vec<LabelCount> = stats
+        .key_breakdown
+        .iter()
+        .map(|(k, v)| LabelCount { label: k.clone(), count: *v })
+        .collect();
+    key_top.sort_by(|a, b| b.count.cmp(&a.count).then_with(|| a.label.cmp(&b.label)));
+    key_top.truncate(12);
+
+    let mut mouse_breakdown: Vec<LabelCount> = stats
+        .mouse_breakdown
+        .iter()
+        .map(|(k, v)| LabelCount { label: k.clone(), count: *v })
+        .collect();
+    mouse_breakdown.sort_by(|a, b| b.count.cmp(&a.count));
+    mouse_breakdown.truncate(4);
+
+    let hourly: Vec<u64> = stats.hourly.to_vec();
+    let hourly_max = hourly.iter().copied().max().unwrap_or(0);
+
+    DayDetail {
+        date: date_str,
+        keys: stats.keys,
+        mouse: stats.mouse,
+        hourly,
+        hourly_max,
+        key_top,
+        mouse_breakdown,
+        mouse_distance_px: stats.mouse_distance_px,
+        scroll_y_ticks: stats.scroll_y_ticks,
+        active_ms: stats.active_ms,
+        empty,
+    }
+}
+
 /// 当月合計 (フッターの「当月 ・ N 打鍵 ・ M クリック」用)。
 /// `year_month` は `YYYY-MM` 形式の文字列を期待する。
 #[tauri::command]
@@ -245,16 +325,14 @@ pub fn get_settings(settings: State<'_, SettingsHandle>) -> Settings {
 }
 
 /// 設定を検証してからメモリ反映 → ディスク書き込みする。
-/// アイドル閾値はその場で計数スレッドに反映される (アプリ再起動不要)。
 #[tauri::command]
 pub fn update_settings(
     new_settings: Settings,
-    state: State<'_, AppStateHandle>,
+    _state: State<'_, AppStateHandle>,
     settings: State<'_, SettingsHandle>,
     paths: State<'_, AppPaths>,
 ) -> Result<(), String> {
     new_settings.validate()?;
-    lock_state(&state).set_idle_threshold(new_settings.idle_threshold_seconds);
     {
         let mut s = lock_settings(&settings);
         *s = new_settings.clone();

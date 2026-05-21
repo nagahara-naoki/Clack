@@ -4,8 +4,8 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Clack — Settings</title>
-    <script src="theme-boot.js"></script>
-    <link rel="stylesheet" href="styles.css" />
+    <script src="../shared/theme-boot.js"></script>
+    <link rel="stylesheet" href="../styles/styles.css" />
   </head>
   <body class="settings-body">
     <div class="set-card">
@@ -39,19 +39,6 @@
             <input type="checkbox" id="opt-autostart" />
             <span class="track"><span class="thumb"></span></span>
           </label>
-        </div>
-
-        <div class="set-row">
-          <div class="set-row-text">
-            <div class="lbl" data-i18n="lbl_idle">アイドル判定の閾値</div>
-            <div class="sub" data-i18n="sub_idle">入力なしでカウントを停止</div>
-          </div>
-          <div class="num-input">
-            <button id="opt-idle-dec" type="button" aria-label="−">−</button>
-            <input id="opt-idle" type="number" min="5" max="3600" step="5" value="60" inputmode="numeric" />
-            <button id="opt-idle-inc" type="button" aria-label="+">+</button>
-            <span class="unit" data-i18n="unit_sec">秒</span>
-          </div>
         </div>
 
         <div class="set-row">

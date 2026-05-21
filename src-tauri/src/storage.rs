@@ -109,4 +109,18 @@ mod tests {
         assert!(read(&path).is_empty());
         let _ = fs::remove_dir_all(&dir);
     }
+
+    #[test]
+    fn write_atomic_leaves_no_tmp_file_on_success() {
+        // tmp + rename パターンが完了し、.tmp ファイルが残らないことを検証。
+        let dir = env::temp_dir().join("clickcounter_test_storage_tmp");
+        let _ = fs::remove_dir_all(&dir);
+        fs::create_dir_all(&dir).unwrap();
+        let path = dir.join("data.json");
+        write_atomic(&path, &HashMap::new()).unwrap();
+        assert!(path.exists());
+        let tmp = path.with_extension("json.tmp");
+        assert!(!tmp.exists(), "{:?} should have been renamed away", tmp);
+        let _ = fs::remove_dir_all(&dir);
+    }
 }

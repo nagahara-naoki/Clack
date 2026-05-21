@@ -21,6 +21,14 @@ use std::time::{Duration, Instant};
 use rdev::{Button, Event, EventType, Key};
 use serde::{Deserialize, Serialize};
 
+/// アイドル判定の既定閾値。入力が無い時間がこれを超えると、次のイベントを
+/// 「アイドル復帰の最初の一手」として扱う (active_ms を加算せず、また
+/// オートリピート用の押下集合をリセットする)。
+/// 旧バージョンでは設定 UI から変更可能だったが、運用上 60 秒が事実上の
+/// 最適値だったため、UI ごと撤去してハードコード化した。テストでは
+/// `AppState.idle_threshold` を直接書き換えて短くする。
+const DEFAULT_IDLE_THRESHOLD: Duration = Duration::from_secs(60);
+
 /// 1 日分の集計結果。`data.json` に 1 日 1 エントリで保存される。
 ///
 /// - `keys` / `mouse`: 合計値。UI のヘッダーに表示。
@@ -106,8 +114,9 @@ pub struct AppState {
     /// 最後に観測した入力時刻。アイドル判定に使用。
     last_input: Instant,
 
-    /// アイドル判定の閾値 (秒数)。設定で変更可能。
-    pub idle_threshold: Duration,
+    /// アイドル判定の閾値。通常は `DEFAULT_IDLE_THRESHOLD` (60 秒) で固定。
+    /// 設定 UI からは触れない。ユニットテストだけが直接書き換えて短くする。
+    pub(crate) idle_threshold: Duration,
 
     /// 何らかの変更が入ったか。フラッシュ後に false に戻す。
     /// ディスク I/O を必要最小に抑えるためのフラグ。
@@ -183,7 +192,6 @@ impl AppState {
     pub fn new(
         today: String,
         mut history: HashMap<String, DayStats>,
-        idle_threshold_seconds: u64,
     ) -> Self {
         let today_stats = history.remove(&today).unwrap_or_default();
         Self {
@@ -192,7 +200,7 @@ impl AppState {
             history,
             pressed: HashSet::new(),
             last_input: Instant::now(),
-            idle_threshold: Duration::from_secs(idle_threshold_seconds),
+            idle_threshold: DEFAULT_IDLE_THRESHOLD,
             dirty: false,
             paused: false,
             live_display: false,
@@ -232,11 +240,6 @@ impl AppState {
     /// リアルタイム表示モードを切替える。
     pub fn set_live_display(&mut self, on: bool) {
         self.live_display = on;
-    }
-
-    /// アイドル閾値を実行中に差し替える (設定 UI から呼ばれる)。
-    pub fn set_idle_threshold(&mut self, secs: u64) {
-        self.idle_threshold = Duration::from_secs(secs);
     }
 
     /// 全集計を破棄して初期状態に戻す (設定 UI の「削除」)。
@@ -452,6 +455,13 @@ impl AppState {
 
 // ----------------------------------------------------------------
 // ユニットテスト (副作用なし: 仮想イベントを直接 handle_event に渡すだけ)
+//
+// 実行: `cargo test --manifest-path src-tauri/Cargo.toml --lib`
+//
+// 既知の Windows 制限: Tauri 2 + WebView2 を依存に持つ lib のテストバイナリは
+// Windows 上で `STATUS_ENTRYPOINT_NOT_FOUND` (0xc0000139) で起動失敗する場合が
+// ある。コンパイル自体は `cargo test --no-run` で確認可能。CI (Linux/macOS)
+// または WSL で実際の test runner を回すのが推奨。
 // ----------------------------------------------------------------
 #[cfg(test)]
 mod tests {
@@ -464,7 +474,7 @@ mod tests {
     }
 
     fn state() -> AppState {
-        AppState::new("2026-01-01".to_string(), HashMap::new(), 60)
+        AppState::new("2026-01-01".to_string(), HashMap::new())
     }
 
     #[test]
@@ -587,6 +597,72 @@ mod tests {
         s.handle_event(ev(EventType::KeyPress(Key::KeyA)));
         assert_eq!(s.today_stats.keys, 1);
         assert_eq!(s.today_stats.key_breakdown.get("KeyA").copied().unwrap_or(0), 1);
+    }
+
+    #[test]
+    fn modifier_plus_key_emits_combined_label() {
+        // Shift 単押し → pending、A 押下 → "Shift+KeyA" の結合チップを emit。
+        let mut s = state();
+        assert!(s.handle_event(ev(EventType::KeyPress(Key::ShiftLeft))).is_none());
+        let live = s.handle_event(ev(EventType::KeyPress(Key::KeyA))).expect("emit");
+        assert_eq!(live.kind, "key");
+        assert_eq!(live.label, "Shift+KeyA");
+    }
+
+    #[test]
+    fn modifier_alone_emits_on_release() {
+        // Shift を単独で押して離すと、Release のタイミングで "Shift" を emit。
+        let mut s = state();
+        assert!(s.handle_event(ev(EventType::KeyPress(Key::ShiftLeft))).is_none());
+        let live = s.handle_event(ev(EventType::KeyRelease(Key::ShiftLeft))).expect("emit");
+        assert_eq!(live.label, "Shift");
+    }
+
+    #[test]
+    fn mouse_move_accumulates_distance_and_rejects_jumps() {
+        // (0,0) → (3,4) は 5px、続く (3,4) → (3,1004) は 1000px ジャンプで除外。
+        let mut s = state();
+        s.handle_event(ev(EventType::MouseMove { x: 0.0, y: 0.0 }));
+        s.handle_event(ev(EventType::MouseMove { x: 3.0, y: 4.0 }));
+        assert_eq!(s.today_stats.mouse_distance_px, 5);
+        s.handle_event(ev(EventType::MouseMove { x: 3.0, y: 1004.0 }));
+        assert_eq!(s.today_stats.mouse_distance_px, 5);
+    }
+
+    #[test]
+    fn wheel_accumulates_absolute_ticks() {
+        // 上下スクロールは符号を無視して絶対値で積む。
+        let mut s = state();
+        s.handle_event(ev(EventType::Wheel { delta_x: 0, delta_y: 3 }));
+        s.handle_event(ev(EventType::Wheel { delta_x: 0, delta_y: -2 }));
+        s.handle_event(ev(EventType::Wheel { delta_x: 4, delta_y: 0 }));
+        assert_eq!(s.today_stats.scroll_y_ticks, 5);
+        assert_eq!(s.today_stats.scroll_x_ticks, 4);
+    }
+
+    #[test]
+    fn paused_state_drops_all_events() {
+        let mut s = state();
+        s.set_paused(true);
+        s.handle_event(ev(EventType::KeyPress(Key::KeyA)));
+        s.handle_event(ev(EventType::ButtonPress(Button::Left)));
+        assert_eq!(s.today_stats.keys, 0);
+        assert_eq!(s.today_stats.mouse, 0);
+    }
+
+    #[test]
+    fn snapshot_excludes_empty_today() {
+        // 空の today_stats はスナップショットに含めない (data.json の肥大防止)。
+        let s = state();
+        assert!(s.snapshot_all().is_empty());
+    }
+
+    #[test]
+    fn snapshot_includes_today_when_nonempty() {
+        let mut s = state();
+        s.handle_event(ev(EventType::KeyPress(Key::KeyA)));
+        let snap = s.snapshot_all();
+        assert_eq!(snap.get("2026-01-01").map(|d| d.keys), Some(1));
     }
 
     #[test]

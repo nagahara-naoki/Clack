@@ -13,10 +13,13 @@
 // localStorage は常に使えるが、念のための防御)。
 
 (function () {
+  let t: string | null = null;
   try {
-    var t = window.localStorage && window.localStorage.getItem("clack.theme");
-    if (t === "light" || t === "dark" || t === "auto") {
-      document.documentElement.dataset.theme = t;
-    }
-  } catch (_) { /* ignore */ }
+    t = window.localStorage?.getItem("clack.theme");
+  } catch (_) {
+    /* ignore */
+  }
+  if (t === "light" || t === "dark" || t === "auto") {
+    document.documentElement.dataset.theme = t;
+  }
 })();

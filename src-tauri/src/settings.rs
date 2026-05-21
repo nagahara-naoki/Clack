@@ -3,9 +3,6 @@
 //!
 //! 公開設定項目:
 //!
-//! - **`idle_threshold_seconds`**: 入力が無くなってから何秒で計数を
-//!   停止するか。[5, 3600] に制限。5 秒未満だと自然な打鍵の合間にも
-//!   止まってしまい、1 時間を超えるとアイドル判定そのものが破綻する。
 //! - **`theme`**: `"light" | "dark" | "auto"`。`"auto"` は OS のテーマに追従。
 //! - **`language`**: `"ja" | "en"`。フロントの表示言語。
 //! - **`months_shown`**: ヒートマップの表示期間 (1, 3, 6, 12 のいずれか)。
@@ -13,17 +10,16 @@
 //!   実際の登録は `tauri-plugin-autostart` が OS 側へ書き込むが、登録が
 //!   消えた場合でも次回起動時に復元できるよう、ユーザーの意思はこちらにも
 //!   保存する。
+//!
+//! 注意: 旧フォーマットの `idle_threshold_seconds` フィールドは UI を撤去
+//! したので無視される (`#[serde(default)]` 無しのため、未指定でも問題なく
+//! 読み込め、書き込み時にはフィールドごと出力されない)。
 
 use std::fs;
 use std::io::{self, Write};
 use std::path::Path;
 
 use serde::{Deserialize, Serialize};
-
-/// アイドル閾値 (秒) の下限。短すぎると通常の打鍵間休止にもヒットする。
-const MIN_IDLE_SECS: u64 = 5;
-/// アイドル閾値 (秒) の上限。
-const MAX_IDLE_SECS: u64 = 3600;
 
 /// 許可されるテーマ値。これ以外はバリデーション失敗。
 const ALLOWED_THEMES: &[&str] = &["light", "dark", "auto"];
@@ -37,8 +33,6 @@ const ALLOWED_MONTHS: &[u32] = &[1, 3, 6, 12];
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Settings {
-    #[serde(default = "default_idle")]
-    pub idle_threshold_seconds: u64,
     #[serde(default = "default_theme")]
     pub theme: String,
     #[serde(default = "default_language")]
@@ -49,7 +43,6 @@ pub struct Settings {
     pub background_start_enabled: bool,
 }
 
-fn default_idle() -> u64 { 60 }
 fn default_theme() -> String { "auto".to_string() }
 fn default_language() -> String { "ja".to_string() }
 fn default_months_shown() -> u32 { 6 }
@@ -58,7 +51,6 @@ fn default_background_start() -> bool { true }
 impl Default for Settings {
     fn default() -> Self {
         Self {
-            idle_threshold_seconds: default_idle(),
             theme: default_theme(),
             language: default_language(),
             months_shown: default_months_shown(),
@@ -96,11 +88,6 @@ impl Settings {
     /// 書き込み前の検証。`update_settings` IPC コマンドから呼ばれ、
     /// 失敗時はフロントにエラー文言が返る。
     pub fn validate(&self) -> Result<(), String> {
-        if !(MIN_IDLE_SECS..=MAX_IDLE_SECS).contains(&self.idle_threshold_seconds) {
-            return Err(format!(
-                "idle_threshold_seconds must be in {MIN_IDLE_SECS}..={MAX_IDLE_SECS}"
-            ));
-        }
         if !ALLOWED_THEMES.contains(&self.theme.as_str()) {
             return Err(format!("theme must be one of {:?}", ALLOWED_THEMES));
         }
@@ -121,14 +108,6 @@ mod tests {
     #[test]
     fn defaults_are_valid() {
         Settings::default().validate().unwrap();
-    }
-
-    #[test]
-    fn rejects_invalid_threshold() {
-        let s = Settings { idle_threshold_seconds: 0, ..Settings::default() };
-        assert!(s.validate().is_err());
-        let s = Settings { idle_threshold_seconds: 4000, ..Settings::default() };
-        assert!(s.validate().is_err());
     }
 
     #[test]
@@ -168,5 +147,40 @@ mod tests {
             let s = Settings { months_shown: m, ..Settings::default() };
             s.validate().unwrap();
         }
+    }
+
+    #[test]
+    fn write_then_read_roundtrip_preserves_values() {
+        // ディスク往復で全フィールドが保たれることを検証。
+        let dir = std::env::temp_dir().join("clack_test_settings_roundtrip");
+        let _ = std::fs::remove_dir_all(&dir);
+        let path = dir.join("settings.json");
+        let original = Settings {
+            theme: "dark".into(),
+            language: "en".into(),
+            months_shown: 3,
+            background_start_enabled: false,
+        };
+        original.write(&path).unwrap();
+        let back = Settings::read(&path);
+        assert_eq!(back.theme, "dark");
+        assert_eq!(back.language, "en");
+        assert_eq!(back.months_shown, 3);
+        assert!(!back.background_start_enabled);
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn read_recovers_with_defaults_on_corruption() {
+        // 壊れた settings.json を渡してもデフォルトで起動できる (アプリ起動を最優先)。
+        let dir = std::env::temp_dir().join("clack_test_settings_corrupt");
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(&dir).unwrap();
+        let path = dir.join("settings.json");
+        std::fs::write(&path, "{{not valid json").unwrap();
+        let back = Settings::read(&path);
+        assert_eq!(back.theme, default_theme());
+        assert_eq!(back.language, default_language());
+        let _ = std::fs::remove_dir_all(&dir);
     }
 }

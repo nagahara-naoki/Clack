@@ -174,6 +174,7 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             commands::get_today_stats,
             commands::get_stats_range,
+            commands::get_day_detail,
             commands::get_month_total,
             commands::get_settings,
             commands::update_settings,
@@ -228,11 +229,10 @@ pub fn run() {
 
             // 設定 + 履歴を読み込んでアプリ状態を構築。
             let user_settings = Settings::read(&paths.settings_path);
-            let idle_secs = user_settings.idle_threshold_seconds;
             let background_start_enabled = user_settings.background_start_enabled;
             let history = storage::read(&paths.data_path);
             let today_str = date_util::today();
-            let app_state = AppState::new(today_str, history, idle_secs);
+            let app_state = AppState::new(today_str, history);
 
             let state_arc: AppStateHandle = Arc::new(Mutex::new(app_state));
             let settings_arc: SettingsHandle = Arc::new(Mutex::new(user_settings));

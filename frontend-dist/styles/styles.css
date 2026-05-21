@@ -152,6 +152,11 @@ body {
   font-feature-settings: "ss01";
   user-select: none;
   -webkit-user-select: none;
+  /* `position: fixed` のツールチップ / ポップオーバーが viewport 右端を
+     一瞬でも越えると WebView2 が document 幅を広げて横スクロールが出る。
+     どの状況でも横スクロールを発生させないためのガード。
+     縦方向は通常通り (overflow-y: auto は html 既定で OK)。 */
+  overflow-x: clip;
 }
 
 button {
@@ -909,11 +914,10 @@ hr {
   flex-wrap: wrap;
 }
 
-/* 巨大な数値。Inter の Light で誌面的に。
-   文字詰めは -0.035em で見出し向き。 */
+/* 巨大な数値。文字詰めは -0.035em で見出し向き。 */
 .cr-kpi-n {
   font-size: 64px;
-  font-weight: 300;
+  font-weight: 400;
   letter-spacing: -0.035em;
   line-height: 0.95;
   color: var(--fg);
@@ -978,28 +982,35 @@ hr {
   color: var(--accent-mouse);
 }
 
+/* 線は常に完全描画。表示アニメは opacity フェードに切り替えた。
+   以前は stroke-dasharray を path 長 (getTotalLength) で動的に与えて
+   draw-on アニメをしていたが、計測誤差や setProperty 反映タイミングで
+   末尾にギャップが残るケースがあったため廃止。
+   stroke-width も 1.25 → 1.6 に増やし、低値が連続する区間 (y=23 付近の
+   ほぼ水平な線) でも視認しやすくする。 */
 .cr-kpi-spark .line {
   fill: none;
   stroke: currentColor;
-  stroke-width: 1.25;
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
   vector-effect: non-scaling-stroke;
-  stroke-dasharray: var(--len, 100);
-  stroke-dashoffset: var(--len, 100);
-  transition: stroke-dashoffset 1100ms cubic-bezier(0.16, 1, 0.3, 1);
+  opacity: 0;
+  transition: opacity 700ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .cr-kpi-spark .area {
   opacity: 0;
-  transition: opacity 700ms ease 350ms;
+  transition: opacity 700ms ease 200ms;
 }
 
 .cr-kpi-spark .dot {
   opacity: 0;
   fill: currentColor;
-  transition: opacity 220ms ease 1050ms;
+  transition: opacity 220ms ease 600ms;
 }
 
-.cr-kpi-spark.is-drawn .line { stroke-dashoffset: 0; }
+.cr-kpi-spark.is-drawn .line { opacity: 1; }
 .cr-kpi-spark.is-drawn .area { opacity: 1; }
 .cr-kpi-spark.is-drawn .dot  { opacity: 1; }
 
@@ -1047,7 +1058,7 @@ hr {
 
 .cr-strip-cell .val .n {
   font-size: 24px;
-  font-weight: 400;
+  font-weight: 500;
   letter-spacing: -0.015em;
   color: var(--fg);
 }
@@ -1249,10 +1260,13 @@ hr {
   .cr-keys-grid { grid-template-columns: 1fr; }
 }
 
+/* キー行: 「キーキャップ」「バー」「件数」の 3 列固定 grid。
+   - 1fr の最小値を 0 にして、狭い列幅でも overflow せずバー幅だけが縮む
+   - キーキャップは min-width: 0 を継承して長いラベル (Shift L 等) は省略 */
 .cr-keyrow {
   display: grid;
-  grid-template-columns: 48px minmax(60px, 1fr) 56px;
-  gap: 12px;
+  grid-template-columns: 40px minmax(0, 1fr) 48px;
+  gap: 10px;
   align-items: center;
   padding: 5px 0;
   font-size: 12px;
@@ -1263,28 +1277,29 @@ hr {
   font-family: "Consolas", "IBM Plex Mono", "Menlo", monospace;
   font-size: 11px;
   font-weight: 500;
-  padding: 2px 6px;
+  padding: 2px 4px;
   border: 1px solid var(--border-strong);
   border-radius: 4px;
   text-align: center;
   background: var(--bg);
   color: var(--fg);
   box-shadow: 0 1px 0 var(--border-strong);
-  min-width: 36px;
+  min-width: 0;
   max-width: 100%;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
-/* バーの track: 薄い罫線色をベースに、視認性のための内側影で
-   「溝」感を出す。fill が 0% でも track が必ず見えるようにする。 */
+/* バーの track: 薄い罫線色ベース。column が 1fr なので min-width は外す
+   (CSS grid 既定の min-width: auto を 0 に上書きして潰れを許容)。 */
 .cr-keyrow .bar {
   height: 6px;
   background: var(--border);
   border-radius: 999px;
   overflow: hidden;
-  min-width: 24px;
+  min-width: 0;
+  width: 100%;
 }
 
 .cr-keyrow .bar span {
@@ -1307,10 +1322,11 @@ hr {
 }
 
 /* マウス内訳行 (左クリック/右クリック/中クリック/スクロール)。
-   ラベルが日本語のテキストになるので、キーコード用の枠は使わない。 */
+   ラベルが日本語のテキストになるので、キーコード用の枠は使わない。
+   キー行と同様に minmax(0, 1fr) で overflow を防ぐ。 */
 .cr-mouserow {
   display: grid;
-  grid-template-columns: 88px minmax(60px, 1fr) 56px;
+  grid-template-columns: 80px minmax(0, 1fr) 56px;
   gap: 12px;
   align-items: center;
   padding: 5px 0;
@@ -1323,6 +1339,7 @@ hr {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  min-width: 0;
 }
 
 .cr-mouserow .bar {
@@ -1330,7 +1347,8 @@ hr {
   background: var(--border);
   border-radius: 999px;
   overflow: hidden;
-  min-width: 24px;
+  min-width: 0;
+  width: 100%;
 }
 
 .cr-mouserow .bar span {
@@ -1612,6 +1630,281 @@ hr {
 
 .tooltip b {
   font-weight: 600;
+}
+
+/* =========================================================
+   Day-detail popover (ヒートマップセルクリック時の単日詳細)
+   =========================================================
+   構成: ヘッダ (日付 + ×) / 統計セル 3 連 / 時間帯ミニチャート /
+        トップキー & マウス内訳 / "データなし" フォールバック。
+   表示位置は JS で計算し inline style で left/top を当てる。 */
+
+.cr-popover {
+  position: fixed;
+  z-index: 100;
+  width: 360px;
+  max-width: calc(100vw - 24px);
+  max-height: 70vh;
+  overflow-y: auto;
+  background: color-mix(in srgb, var(--bg) 96%, transparent);
+  -webkit-backdrop-filter: blur(20px) saturate(160%);
+  backdrop-filter: blur(20px) saturate(160%);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.06) inset,
+    0 20px 48px rgba(0, 0, 0, 0.20),
+    0 4px 12px rgba(0, 0, 0, 0.08);
+  color: var(--fg);
+  font-variant-numeric: tabular-nums;
+  /* 開閉アニメ: 表示時に opacity + わずかな上昇。 */
+  opacity: 0;
+  transform: translateY(4px);
+  transition: opacity 160ms ease, transform 200ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.cr-popover.is-open {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.cr-popover[hidden] { display: none; }
+
+.cr-popover-h {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 12px 14px 10px;
+  border-bottom: 1px solid var(--border);
+}
+
+.cr-popover-date {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  font-size: 14px;
+}
+
+.cr-popover-date b {
+  font-weight: 600;
+  color: var(--fg);
+}
+
+.cr-popover-date .dow {
+  font-size: 11.5px;
+  color: var(--fg-muted);
+}
+
+.cr-popover-date .dow.is-weekend { color: #d97706; }
+
+.cr-popover-close {
+  width: 24px;
+  height: 24px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  background: transparent;
+  color: var(--fg-muted);
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.cr-popover-close:hover {
+  background: var(--bg-hover);
+  color: var(--fg);
+}
+
+.cr-popover-close svg { width: 14px; height: 14px; }
+
+.cr-popover-body {
+  padding: 12px 14px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+/* 統計セル 3 連: キー / マウス / アクティブ時間 */
+.cr-popover-stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 8px;
+}
+
+.cr-popover-stats .cell {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px 10px;
+  background: var(--bg-soft);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  min-width: 0;
+}
+
+.cr-popover-stats .lbl {
+  font-size: 9.5px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--fg-faint);
+  font-weight: 600;
+}
+
+.cr-popover-stats .n {
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--fg);
+  letter-spacing: -0.01em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cr-popover-stats .is-mouse .n { color: var(--accent-mouse); }
+.cr-popover-stats .cell:first-child .n { color: var(--accent); }
+
+/* セクション見出し */
+.cr-popover-section {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.cr-popover-h4 {
+  font-size: 9.5px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--fg-faint);
+  font-weight: 600;
+  margin: 0;
+}
+
+/* 時間帯ミニチャート (24 本) */
+.cr-popover-hours {
+  display: grid;
+  grid-template-columns: repeat(24, 1fr);
+  gap: 2px;
+  align-items: end;
+  height: 36px;
+}
+
+.cr-popover-hour {
+  width: 100%;
+  background: var(--accent);
+  border-radius: 2px 2px 1px 1px;
+  min-height: 2px;
+  height: var(--h, 2px);
+  transition: height 600ms cubic-bezier(0.16, 1, 0.3, 1) var(--delay, 0ms);
+}
+
+.cr-popover-hour[data-zero="true"] {
+  background: var(--border);
+  opacity: 0.6;
+}
+
+.cr-popover-hours-axis {
+  display: flex;
+  justify-content: space-between;
+  padding-top: 4px;
+  font-size: 9px;
+  color: var(--fg-faint);
+}
+
+/* 2 列パネル (キー内訳 / マウス内訳) */
+.cr-popover-split {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+.cr-popover-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.cr-popover-list {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+/* リスト行: キーキャップ風 / ラベル + バー + 数値 */
+.cr-popover-row {
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr) 36px;
+  gap: 8px;
+  align-items: center;
+  font-size: 11.5px;
+  padding: 2px 0;
+}
+
+.cr-popover-row .k {
+  font-family: "Consolas", "IBM Plex Mono", monospace;
+  font-size: 10.5px;
+  font-weight: 500;
+  padding: 1px 4px;
+  border: 1px solid var(--border-strong);
+  border-radius: 3px;
+  text-align: center;
+  background: var(--bg);
+  color: var(--fg);
+  min-width: 0;
+  max-width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cr-popover-row .lbl {
+  color: var(--fg);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cr-popover-row .bar {
+  height: 4px;
+  background: var(--border);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.cr-popover-row .bar span {
+  display: block;
+  height: 100%;
+  width: 0;
+  background: var(--accent);
+  border-radius: inherit;
+  transition: width 500ms cubic-bezier(0.16, 1, 0.3, 1) var(--delay, 0ms);
+}
+
+.cr-popover-panel.is-mouse .cr-popover-row .bar span { background: var(--accent-mouse); }
+
+.cr-popover-row .n {
+  text-align: right;
+  font-size: 10.5px;
+  color: var(--fg-muted);
+}
+
+.cr-popover-empty {
+  padding: 20px 0;
+  text-align: center;
+  font-size: 12px;
+  color: var(--fg-faint);
+}
+
+/* セル側にも「クリック可能」感のためのカーソル変更 */
+.cal-weeks .cell:not(.is-future):not(.is-out) { cursor: pointer; }
+
+@media (prefers-reduced-motion: reduce) {
+  .cr-popover,
+  .cr-popover-hour,
+  .cr-popover-row .bar span {
+    transition: none !important;
+  }
 }
 
 /* =========================================================

@@ -7,15 +7,12 @@
 // `update_settings` コマンドでも再バリデーションされる。
 
 (() => {
-  "use strict";
-
   // ============================================================
   // Tauri ランタイム
   // ============================================================
   const T = window.__TAURI__;
   if (!T) {
-    document.body.textContent =
-      "Clack must be launched from the Tauri runtime.";
+    document.body.textContent = "Clack must be launched from the Tauri runtime.";
     return;
   }
   const invoke = T.core.invoke;
@@ -25,13 +22,6 @@
   const $ = (id) => document.getElementById(id);
 
   // ============================================================
-  // 定数 (Rust 側の settings.rs と同じ値にすること)
-  // ============================================================
-  const IDLE_MIN = 5;
-  const IDLE_MAX = 3600;
-  const IDLE_STEP = 5;
-
-  // ============================================================
   // i18n
   // ============================================================
   const I18N = {
@@ -39,9 +29,6 @@
       settingsTitle: "設定",
       lbl_autostart: "自動起動",
       sub_autostart: "OS 起動時に自動で開始する",
-      lbl_idle: "アイドル判定の閾値",
-      sub_idle: "入力なしでカウントを停止",
-      unit_sec: "秒",
       lbl_theme: "テーマ",
       sub_theme: "外観を切り替え",
       lbl_language: "言語",
@@ -82,9 +69,6 @@
       settingsTitle: "Settings",
       lbl_autostart: "Autostart",
       sub_autostart: "Launch at OS startup",
-      lbl_idle: "Idle threshold",
-      sub_idle: "Pause counting after no input",
-      unit_sec: "sec",
       lbl_theme: "Theme",
       sub_theme: "Switch appearance",
       lbl_language: "Language",
@@ -131,7 +115,6 @@
 
   /** 保存前の確定値スナップショット。キャンセル時の復元用。 */
   let initialSettings = {
-    idleThresholdSeconds: 60,
     theme: "auto",
     language: "ja",
     monthsShown: 6,
@@ -148,18 +131,11 @@
    *  paused-changed イベントとトグルの両方から書き換わる。 */
   let currentPaused = false;
 
-
   const L = () => I18N[lang] || I18N.ja;
 
   // ============================================================
   // ヘルパ
   // ============================================================
-
-  /** アイドル閾値を許容範囲 [MIN, MAX] に丸めて整数化する。 */
-  function clampIdle(v) {
-    if (!Number.isFinite(v)) return IDLE_MIN;
-    return Math.min(IDLE_MAX, Math.max(IDLE_MIN, Math.round(v)));
-  }
 
   /** バイト数を人が読みやすい単位に整形。1024 基準 (B / KB / MB)。
    *  ロケール依存しない表記なので言語切替に追従不要。 */
@@ -181,7 +157,11 @@
   function applyTheme(name) {
     const t = name === "light" || name === "dark" ? name : "auto";
     document.documentElement.dataset.theme = t;
-    try { localStorage.setItem("clack.theme", t); } catch (_) { /* ignore */ }
+    try {
+      localStorage.setItem("clack.theme", t);
+    } catch (_) {
+      /* ignore */
+    }
     for (const btn of document.querySelectorAll("[data-theme-opt]")) {
       const on = btn.dataset.themeOpt === t;
       btn.classList.toggle("is-active", on);
@@ -210,7 +190,6 @@
 
   /** 現在のフォーム状態から保存ペイロードを組み立てる。 */
   function collectFormState() {
-    const idle = clampIdle(parseInt($("opt-idle").value, 10));
     let theme = "auto";
     for (const btn of document.querySelectorAll("[data-theme-opt]")) {
       if (btn.classList.contains("is-active")) {
@@ -226,7 +205,6 @@
       }
     }
     return {
-      idleThresholdSeconds: idle,
       theme,
       language,
       // monthsShown は本ウィンドウでは編集しないので、サーバ側の値を尊重する
@@ -258,7 +236,6 @@
     try {
       const s = await invoke("get_settings");
       initialSettings = { ...initialSettings, ...s };
-      $("opt-idle").value = String(clampIdle(s.idleThresholdSeconds));
       applyLanguage(s.language || "ja");
       applyTheme(s.theme || "auto");
     } catch (e) {
@@ -321,10 +298,18 @@
 
     // 4) スナップショット更新 → 他ウィンドウへ通知 → トースト → 自動で閉じる
     initialSettings = next;
-    try { await emit("settings-changed"); } catch { /* 通知失敗は致命的でない */ }
+    try {
+      await emit("settings-changed");
+    } catch {
+      /* 通知失敗は致命的でない */
+    }
     showToast(L().toast_saved);
     setTimeout(async () => {
-      try { await invoke("close_settings_window"); } catch { /* */ }
+      try {
+        await invoke("close_settings_window");
+      } catch {
+        /* */
+      }
     }, 400);
   }
 
@@ -332,29 +317,16 @@
     // テーマ・言語のプレビューを保存前の値に戻す
     applyTheme(initialSettings.theme || "auto");
     applyLanguage(initialSettings.language || "ja");
-    try { await invoke("close_settings_window"); } catch { /* */ }
+    try {
+      await invoke("close_settings_window");
+    } catch {
+      /* */
+    }
   }
 
   // ============================================================
   // フォームコントロールのバインド
   // ============================================================
-
-  function setupIdleInput() {
-    const inp = $("opt-idle");
-    const sync = () => {
-      inp.value = String(clampIdle(parseInt(inp.value, 10)));
-    };
-    inp.addEventListener("change", sync);
-    inp.addEventListener("blur", sync);
-    $("opt-idle-dec").addEventListener("click", (ev) => {
-      if (!ev.isTrusted) return;
-      inp.value = String(clampIdle(parseInt(inp.value, 10) - IDLE_STEP));
-    });
-    $("opt-idle-inc").addEventListener("click", (ev) => {
-      if (!ev.isTrusted) return;
-      inp.value = String(clampIdle(parseInt(inp.value, 10) + IDLE_STEP));
-    });
-  }
 
   /** 「削除」ボタンの 2 段階確認 UI を組み立てる。
    *  1 回目クリック: 「キャンセル / 本当に削除」の 2 つに展開。
@@ -365,7 +337,10 @@
     let revertTimer = 0;
 
     const renderInitial = () => {
-      if (revertTimer) { clearTimeout(revertTimer); revertTimer = 0; }
+      if (revertTimer) {
+        clearTimeout(revertTimer);
+        revertTimer = 0;
+      }
       wrap.replaceChildren();
       const btn = document.createElement("button");
       btn.id = "opt-clear-data";
@@ -545,13 +520,13 @@
   async function setupBackendListeners() {
     // トレイから自動起動を切り替えた場合に同期させる。
     await listen("autostart-changed", (event) => {
-      const v = Boolean(event && event.payload);
+      const v = Boolean(event?.payload);
       initialAutostart = v;
       $("opt-autostart").checked = v;
     });
     // トレイから一時停止を切り替えた場合に同期させる。
     await listen("paused-changed", (event) => {
-      const v = Boolean(event && event.payload);
+      const v = Boolean(event?.payload);
       currentPaused = v;
       $("opt-pause").checked = v;
     });
@@ -562,7 +537,6 @@
   // ============================================================
 
   async function init() {
-    setupIdleInput();
     setupThemeSegment();
     setupLanguageSegment();
     setupPauseToggle();

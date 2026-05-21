@@ -4,9 +4,9 @@
   "version": "0.1.0",
   "identifier": "com.clack.desktop",
   "build": {
-    "frontendDist": "../src",
+    "frontendDist": "../frontend-dist",
     "devUrl": "http://localhost:1420",
-    "beforeDevCommand": "npx http-server src -p 1420 -s -c-1",
+    "beforeDevCommand": "npx http-server frontend-dist -p 1420 -s -c-1",
     "beforeBuildCommand": ""
   },
   "app": {
@@ -31,7 +31,7 @@
       {
         "label": "settings",
         "title": "Clack — 設定",
-        "url": "settings.html",
+        "url": "settings/settings.html",
         "width": 460,
         "height": 520,
         "resizable": false,
@@ -45,7 +45,7 @@
       {
         "label": "live",
         "title": "Clack Live",
-        "url": "live.html",
+        "url": "live/live.html",
         "width": 460,
         "height": 92,
         "resizable": true,

@@ -32,6 +32,14 @@ panic = "warn"
 [build-dependencies]
 tauri-build = { version = "2", features = [] }
 
+# テスト用: tauri の "test" feature は MockRuntime を提供し、テスト
+# バイナリが WebView2 ランタイム本体を呼ばずに済むようにする。CI (Linux)
+# / macOS / Windows MSVC toolchain では `cargo test --lib` が実行可能。
+# Windows GNU toolchain は Tauri 2 と組み合わせると test binary 起動時に
+# loader 問題が出るため、コンパイル確認のみ (`cargo test --no-run --lib`)。
+[dev-dependencies]
+tauri = { version = "2.11", features = ["test"] }
+
 # --- Vulnerability notes (verified 2026-05-14, RustSec advisory DB) -----------
 #  - tauri 2.x:               no open advisories (1.x advisories do not apply)
 #  - tauri-plugin-autostart:  no open advisories

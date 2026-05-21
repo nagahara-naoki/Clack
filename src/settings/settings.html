@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="ja" data-theme="auto">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Clack — Settings</title>
+    <script src="../shared/theme-boot.js"></script>
+    <link rel="stylesheet" href="../styles/styles.css" />
+  </head>
+  <body class="settings-body">
+    <div class="set-card">
+      <header class="set-head">
+        <div class="set-title" data-i18n="settingsTitle">設定</div>
+        <button id="set-close" class="icon-btn" aria-label="Close" title="Close">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
+          </svg>
+        </button>
+      </header>
+
+      <main class="set-body">
+        <div class="set-row">
+          <div class="set-row-text">
+            <div class="lbl" data-i18n="lbl_pause">一時停止</div>
+            <div class="sub" data-i18n="sub_pause">入力カウントを止める (再起動時に解除)</div>
+          </div>
+          <label class="toggle">
+            <input type="checkbox" id="opt-pause" />
+            <span class="track"><span class="thumb"></span></span>
+          </label>
+        </div>
+
+        <div class="set-row">
+          <div class="set-row-text">
+            <div class="lbl" data-i18n="lbl_autostart">自動起動</div>
+            <div class="sub" data-i18n="sub_autostart">OS 起動時に自動で開始する</div>
+          </div>
+          <label class="toggle">
+            <input type="checkbox" id="opt-autostart" />
+            <span class="track"><span class="thumb"></span></span>
+          </label>
+        </div>
+
+        <div class="set-row">
+          <div class="set-row-text">
+            <div class="lbl" data-i18n="lbl_theme">テーマ</div>
+            <div class="sub" data-i18n="sub_theme">外観を切り替え</div>
+          </div>
+          <div class="seg" role="radiogroup" aria-label="Theme">
+            <button class="seg-btn" data-theme-opt="light" role="radio">Light</button>
+            <button class="seg-btn" data-theme-opt="dark" role="radio">Dark</button>
+            <button class="seg-btn" data-theme-opt="auto" role="radio">Auto</button>
+          </div>
+        </div>
+
+        <div class="set-row">
+          <div class="set-row-text">
+            <div class="lbl" data-i18n="lbl_language">言語</div>
+            <div class="sub" data-i18n="sub_language">表示言語を切り替え</div>
+          </div>
+          <div class="seg" role="radiogroup" aria-label="Language">
+            <button class="seg-btn" data-lang-opt="ja" role="radio">日本語</button>
+            <button class="seg-btn" data-lang-opt="en" role="radio">English</button>
+          </div>
+        </div>
+
+        <div class="set-row">
+          <div class="set-row-text">
+            <div class="lbl" data-i18n="lbl_storage">保存データ</div>
+            <div class="sub" id="storage-info">—</div>
+          </div>
+          <div class="storage-actions" id="storage-actions">
+            <button id="opt-clear-data" class="btn danger" type="button" data-i18n="btn_clear">削除</button>
+          </div>
+        </div>
+
+        <div class="set-row">
+          <div class="set-row-text">
+            <div class="lbl" data-i18n="lbl_backup">バックアップ</div>
+            <div class="sub" data-i18n="sub_backup">JSON は完全形式 ・ CSV は表計算用</div>
+          </div>
+          <div class="storage-actions">
+            <button id="opt-import" class="btn ghost" type="button" data-i18n="btn_import">インポート</button>
+            <button id="opt-export-json" class="btn ghost" type="button" data-i18n="btn_export_json">JSON</button>
+            <button id="opt-export-csv" class="btn ghost" type="button" data-i18n="btn_export_csv">CSV</button>
+          </div>
+        </div>
+      </main>
+
+      <footer class="set-foot">
+        <button id="set-cancel" class="btn ghost" type="button" data-i18n="btn_cancel">キャンセル</button>
+        <button id="set-save" class="btn primary" type="button" data-i18n="btn_save">保存</button>
+      </footer>
+      <div id="set-toast" class="toast" hidden></div>
+    </div>
+    <script src="settings.js"></script>
+  </body>
+</html>
